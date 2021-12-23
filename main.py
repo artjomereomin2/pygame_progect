@@ -53,23 +53,34 @@ def terminate():
 
 
 def start_screen():
-    intro_text = ["ЗАСТАВКА", "",
-                  "Правила игры",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
+    intro_text = ["Название игры",
+                  "Правила игры:",
+                  "Нажмите пробел или левую кнопку мыши,", "чтобы подлететь вверх.",
+                  "Избегайте препятствий, они могут сломать ваш двигатель.",
+                  "Не падайте на землю - проиграете.",
+                  "Нажмите что-нибудь для начала игры."]
 
     fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
-    text_coord = 512
+    text_coord = 200
+    mx_right = 0
     for line in intro_text:
         string_rendered = font.render(line, True, pygame.Color((32, 32, 32)))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
+        mx_right = max(mx_right, intro_rect.y)
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
+        print(intro_rect.x, intro_rect.y)
+
+    # (0, 0, 0,50), ((10, 200), (mx_right, text_coord - 200))
+    image = pygame.Surface([WIDTH, text_coord - 200])
+    image.fill((0, 0, 0))
+    image.set_alpha(50)
+    screen.blit(image, (0, 200))
 
     while True:
         for event in pygame.event.get():
@@ -134,6 +145,40 @@ def main_game():
         clock.tick(FPS)
 
 
+def end_screen(time):
+    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь, чтобы продолжить"]
+
+    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 300
+    mx_right = 0
+    for line in intro_text:
+        string_rendered = font.render(line, True, pygame.Color((32, 32, 32)))
+        intro_rect = string_rendered.get_rect()
+        mx_right = max(mx_right, intro_rect.x)
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    image = pygame.Surface([WIDTH, text_coord - 200])
+    image.fill((0, 0, 0))
+    image.set_alpha(50)
+    screen.blit(image, (0, 300))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return main_game()
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, groups, sheet, columns, rows, x, y, scale_to=None, switch=lambda x: True):
         super().__init__(*groups)
@@ -184,11 +229,17 @@ class Player(AnimatedSprite):
 
         self.slow_timer = 0
 
+        self.time = 0
+
     def move(self):
         # print(self.rect.x, self.rect.y)
         self.speedy -= self.acceleration if self.slow_timer == 0 else self.acceleration // 2
 
     def update(self):
+        self.time += 1
+        if self.rect.bottom >= HEIGHT:
+            self.kill()
+            end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
         self.speedy += self.G
         self.rect.y += self.speedy
