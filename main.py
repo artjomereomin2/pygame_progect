@@ -109,12 +109,12 @@ def main_game():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_RIGHT:
                     # то, что происходит при столкновении с мусором
-                    '''particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
+                    particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
                                                     [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
                                                      for
                                                      x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=20,
                                                     follow_player=True, gravity=(-1, 0), count=40))
-                    player.de_baf(10 ** 2 * 3)'''
+                    player.de_baf(10 ** 2 * 3)
                 if event.button == pygame.BUTTON_LEFT:
                     player.move()
 
@@ -236,14 +236,14 @@ class Player(AnimatedSprite):
 
     def move(self):
         # print(self.rect.x, self.rect.y)
-        self.speedy -= self.acceleration if self.slow_timer == 0 else self.acceleration // 2
+        self.speedy -= self.acceleration if self.slow_timer == 0 else self.acceleration - self.value
 
     def update(self):
         if self.rect.top <= 0:
             self.rect.top = 0
             self.speedy = 1
         self.time += 1
-        if self.rect.bottom >= HEIGHT+20:
+        if self.rect.bottom >= HEIGHT + 20:
             self.kill()
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
@@ -255,8 +255,9 @@ class Player(AnimatedSprite):
         self.mask = pygame.mask.from_surface(self.image)
         # print(self.rect.x, self.rect.y)
 
-    def de_baf(self, value=10 ** 3):
-        self.slow_timer += value
+    def de_baf(self, time=10 ** 3, value=2):
+        self.value = value
+        self.slow_timer += time
 
 
 screen_rect = (0, 0, WIDTH, HEIGHT)
