@@ -21,7 +21,7 @@ musor = pygame.sprite.Group()
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (440, 440)
+SIZE = WIDTH, HEIGHT = (900, 440)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -66,7 +66,7 @@ def start_screen():
     text_coord = 200
     mx_right = 0
     for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color((32, 32, 32)))
+        string_rendered = font.render(line, True, pygame.Color((239, 239, 239)))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -155,7 +155,7 @@ def end_screen(time):
     text_coord = 300
     mx_right = 0
     for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color((32, 32, 32)))
+        string_rendered = font.render(line, True, pygame.Color((239, 239, 239)))
         intro_rect = string_rendered.get_rect()
         mx_right = max(mx_right, intro_rect.x)
         text_coord += 10
@@ -243,7 +243,7 @@ class Player(AnimatedSprite):
             self.rect.top = 0
             self.speedy = 1
         self.time += 1
-        if self.rect.bottom >= HEIGHT:
+        if self.rect.bottom >= HEIGHT+20:
             self.kill()
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
