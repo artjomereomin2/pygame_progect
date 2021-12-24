@@ -128,7 +128,8 @@ def main_game():
                 p.update()
                 i += 1
 
-        if pygame.sprite.spritecollideany(player, musor):
+        # TODO протестировать мусор
+        if [1 for m in musor if pygame.sprite.collide_mask(m, player)]:
             particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
                                             [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
                                              for
@@ -224,6 +225,8 @@ class Player(AnimatedSprite):
         self.image = other_image
         self.rect = self.image.get_rect()
 
+        self.mask = pygame.mask.from_surface(self.image)
+
         self.rect.centerx = pos_x
         self.rect.centery = pos_y
 
@@ -236,6 +239,9 @@ class Player(AnimatedSprite):
         self.speedy -= self.acceleration if self.slow_timer == 0 else self.acceleration // 2
 
     def update(self):
+        if self.rect.top <= 0:
+            self.rect.top = 0
+            self.speedy = 1
         self.time += 1
         if self.rect.bottom >= HEIGHT:
             self.kill()
@@ -246,7 +252,7 @@ class Player(AnimatedSprite):
         other_image = self.other_image.copy()
         other_image.blit(super().update(), (160, 30))
         self.image = other_image
-
+        self.mask = pygame.mask.from_surface(self.image)
         # print(self.rect.x, self.rect.y)
 
     def de_baf(self, value=10 ** 3):
