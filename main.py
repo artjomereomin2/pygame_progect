@@ -18,7 +18,7 @@ level = 0
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
-musor = pygame.sprite.Group()
+garbage = pygame.sprite.Group()
 
 pygame.init()
 
@@ -61,7 +61,7 @@ class Garbage(pygame.sprite.Sprite):
     image = load_image("garbage.png", -1, (100, 100), 180)
 
     def __init__(self, pos):
-        super().__init__(all_sprites, musor)
+        super().__init__(all_sprites, garbage)
         self.image = Garbage.image
         self.gravitate = 0
         self.rect = self.image.get_rect()
@@ -71,8 +71,8 @@ class Garbage(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
-        self.rect.x -= 3
-        self.rect.y += int(self.gravitate)
+        self.rect.x -= 3 + int(self.gravitate)
+        self.rect.y += +randint(-5, 5)
         if self.rect.y >= HEIGHT or self.rect.x < -36:
             self.kill()
         self.gravitate += GRAVITY
@@ -170,7 +170,7 @@ def main_game():
                 i += 1
 
         # TODO протестировать мусор
-        if [1 for m in musor if pygame.sprite.collide_mask(m, player)]:
+        if [1 for m in garbage if pygame.sprite.collide_mask(m, player)]:
             particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
                                             [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
                                              for
