@@ -22,7 +22,7 @@ garbage = pygame.sprite.Group()
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (1500, 700)
+SIZE = WIDTH, HEIGHT = (700, 440)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -149,10 +149,12 @@ def main_game():
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
-            Garbage((WIDTH, randint(0, HEIGHT)))
-        if level == 3:
+            Garbage((WIDTH, randint(0, HEIGHT - 100)))
+        if level == 20:
             level = 0
             coeff += 0.5
+        if coeff >= FPS / 2:
+            coeff = 0.5
         i = 0
         while i < len(particles):
             p = particles[i]
@@ -289,7 +291,6 @@ class Player(AnimatedSprite):
             self.speedy = 1
         self.time += 1
         if self.rect.bottom >= HEIGHT + 20:
-            self.kill()
             for i in all_sprites:
                 i.kill()
             coeff = 0.5
