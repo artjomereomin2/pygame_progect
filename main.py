@@ -146,11 +146,12 @@ def main_game():
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
-            Garbage((WIDTH, randint(-2 * HEIGHT, 0)))
-            Garbage((WIDTH, randint(0, HEIGHT // 2)))
+            Garbage((WIDTH, randint(0, HEIGHT - 100)))
         if level == 20:
             level = 0
             coeff += 0.5
+        if coeff >= FPS / 2:
+            coeff = 0.5
         i = 0
         while i < len(particles):
             p = particles[i]
@@ -175,7 +176,6 @@ def main_game():
         all_sprites.update()
         all_sprites.draw(screen)
         player_group.draw(screen)
-        particles_sprites.update()
         particles_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
@@ -284,8 +284,7 @@ class Player(AnimatedSprite):
             self.speedy = 1
         self.time += 1
         if self.rect.bottom >= HEIGHT + 20:
-            self.kill()
-            for i in garbage:
+            for i in all_sprites:
                 i.kill()
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
@@ -312,7 +311,7 @@ class Particle(pygame.sprite.Sprite):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
     def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0):
-        super().__init__(particles_sprites)
+        super().__init__(particles_sprites, all_sprites)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
         self.image = self.pictures[self.image_ind]
