@@ -3,13 +3,11 @@ import sys
 import random
 from random import randint
 import pygame
-from math import atan, degrees
 
 FPS = 50
 
 # основной персонаж
 player = None
-GRAVITY = 0.1
 sec = 0
 coeff = 0.5
 level = 0
@@ -18,11 +16,14 @@ level = 0
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
+stars_sprites = pygame.sprite.Group()
 garbage = pygame.sprite.Group()
+iss = True
+G = 9.8 / FPS
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (700, 440)
+SIZE = WIDTH, HEIGHT = (1000, 440)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -31,10 +32,10 @@ clock = pygame.time.Clock()
 running = True
 
 
-def draw(screen):
+def draw(screen, level=None):
     screen.fill((0, 0, 0))
-    for _ in range(20000):
-        pygame.draw.circle(screen, (255, 255, 255), (randint(0, 800), randint(0, 800)), 1, width=0)
+    for _ in range(1000):
+        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)), (randint(0, WIDTH), randint(0, HEIGHT)), 2, width=0)
 
 
 def load_image(name, colorkey=None, size=None, rotate=0):
@@ -75,7 +76,7 @@ class Garbage(pygame.sprite.Sprite):
         self.rect.y += +randint(-5, 5)
         if self.rect.y >= HEIGHT or self.rect.x < -36:
             self.kill()
-        self.gravitate += GRAVITY
+        self.gravitate += G
 
 
 def terminate():
@@ -124,11 +125,11 @@ def start_screen():
         clock.tick(FPS)
 
 
-star_picture = load_image('star.png', size=(5, 5))
+star_picture = load_image('star.png', -1, size=(10, 10))
 
 
 def main_game():
-    global player, coeff, sec, level
+    global player, coeff, sec, level, iss
     player = Player(100, HEIGHT // 2)
     particles = []
     global level_x, level_y
@@ -140,12 +141,19 @@ def main_game():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     player.move()
+                if event.key == pygame.K_e:
+                    iss = False
+                if event.key == pygame.K_c:
+                    iss = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT:
                     player.move()
 
         screen.fill((0, 0, 0))
-        sec += 1
+        if sec % randint(2, 9) == 0:
+            draw(screen)
+        if iss:
+            sec += 1
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
@@ -156,7 +164,7 @@ def main_game():
         if coeff >= FPS / 2:
             coeff = 0.5
         i = 0
-        while i < len(particles):
+        while i < len(particles) and iss:
             p = particles[i]
             if p.alive == -1:
                 particles.pop(i)
@@ -177,9 +185,9 @@ def main_game():
 
         for _ in range(randint(0, 1)):
             Particle((randint(WIDTH // 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
-                     (-1, 0), dokill=False)
-
-        all_sprites.update()
+                     (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
+        if iss:
+            all_sprites.update()
         all_sprites.draw(screen)
         player_group.draw(screen)
         particles_sprites.draw(screen)
@@ -188,7 +196,7 @@ def main_game():
 
 
 def end_screen(time):
-    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь, чтобы продолжить"]
+    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь(кроме пробела и ЛКМ), чтобы продолжить"]
 
     fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -214,8 +222,8 @@ def end_screen(time):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.KEYDOWN and event.key != pygame.K_SPACE or \
+                    event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_RIGHT:
                 return main_game()
         pygame.display.flip()
         clock.tick(FPS)
@@ -318,8 +326,8 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True):
-        super().__init__(particles_sprites, all_sprites)
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True, groups=(all_sprites, particles_sprites)):
+        super().__init__(*groups)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
         self.image = self.pictures[self.image_ind]
