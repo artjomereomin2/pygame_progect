@@ -10,6 +10,9 @@ FPS = 50
 # основной персонаж
 player = None
 GRAVITY = 0.1
+sec = 0
+coeff = 0.5
+level = 0
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
@@ -19,7 +22,7 @@ musor = pygame.sprite.Group()
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (900, 440)
+SIZE = WIDTH, HEIGHT = (700, 440)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -55,7 +58,7 @@ def load_image(name, colorkey=None, size=None, rotate=0):
 
 
 class Garbage(pygame.sprite.Sprite):
-    image = load_image("garbage.png", -1, None, 180)
+    image = load_image("garbage.png", -1, (100, 100), 180)
 
     def __init__(self, pos):
         super().__init__(all_sprites, musor)
@@ -73,7 +76,7 @@ class Garbage(pygame.sprite.Sprite):
         if self.rect.y >= HEIGHT or self.rect.x < -36:
             self.kill()
         self.gravitate += GRAVITY
-        self.image = load_image("garbage.png", -1, None, degrees(atan(self.gravitate / 3)) + 180)
+        self.image = load_image("garbage.png", -1, (100, 100), degrees(atan(self.gravitate / 3)) + 180)
 
 
 def terminate():
@@ -123,7 +126,7 @@ def start_screen():
 
 
 def main_game():
-    global player
+    global player, coeff, sec, level
     player = Player(100, HEIGHT // 2)
     particles = []
     global level_x, level_y
@@ -148,6 +151,15 @@ def main_game():
                     player.move()
 
         screen.fill((0, 0, 0))
+        sec += 1
+        if sec == int(FPS / coeff):
+            sec = 0
+            level += 1
+            Garbage((WIDTH, randint(-2 * HEIGHT, 0)))
+            Garbage((WIDTH, randint(0, HEIGHT // 2)))
+        if level == 20:
+            level = 0
+            coeff += 0.5
         i = 0
         while i < len(particles):
             p = particles[i]
