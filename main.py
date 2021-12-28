@@ -166,7 +166,7 @@ def main_game():
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
                                                 [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
                                                  for
-                                                 x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=20,
+                                                 x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=60,
                                                 follow_player=True, gravity=(-1, 0), count=40))
                 player.de_baf(10 ** 2 * 3)
                 m.kill()
@@ -297,7 +297,7 @@ class Player(AnimatedSprite):
         self.mask = pygame.mask.from_surface(self.image)
         # print(self.rect.x, self.rect.y)
 
-    def de_baf(self, time=10 ** 3, value=2):
+    def de_baf(self, time=10 ** 3, value=1):
         self.value += value
         self.slow_timer = time
 
