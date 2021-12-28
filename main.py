@@ -79,7 +79,7 @@ class Garbage(pygame.sprite.Sprite):
     def update(self):
         self.rect.x -= 3 + int(self.gravitate)
         self.rect.y += +randint(-5, 5)
-        if self.rect.y >= HEIGHT or self.rect.x < -36:
+        if not self.rect.colliderect(screen_rect):
             self.kill()
         self.gravitate += G
 
