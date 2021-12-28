@@ -63,7 +63,7 @@ class Garbage(pygame.sprite.Sprite):
         self.gravitate = 0
         self.rect = self.image.get_rect()
         # вычисляем маску для эффективного сравнения
-        self.mask = pygame.mask.from_surface(self.image)
+        # self.mask = pygame.mask.from_surface(self.image)
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
@@ -346,7 +346,7 @@ class Particle(pygame.sprite.Sprite):
             self.kill()
 
 
-class SpawnParticles():
+class SpawnParticles:
     def __init__(self, pos, dx, dy, pictures, count=10, times=1, gravity=(0, 1), change=lambda x: x % 10 == 0,
                  split=10, follow_player=False):
         self.alive = 1
