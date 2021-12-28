@@ -22,7 +22,7 @@ garbage = pygame.sprite.Group()
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (700, 440)
+SIZE = WIDTH, HEIGHT = (1500, 700)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -124,6 +124,9 @@ def start_screen():
         clock.tick(FPS)
 
 
+star_picture = load_image('star.png', size=(5, 5))
+
+
 def main_game():
     global player, coeff, sec, level
     player = Player(100, HEIGHT // 2)
@@ -146,9 +149,8 @@ def main_game():
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
-            Garbage((WIDTH, randint(-2 * HEIGHT, 0)))
-            Garbage((WIDTH, randint(0, HEIGHT // 2)))
-        if level == 20:
+            Garbage((WIDTH, randint(0, HEIGHT)))
+        if level == 3:
             level = 0
             coeff += 0.5
         i = 0
@@ -171,11 +173,13 @@ def main_game():
                 player.de_baf(10 ** 2 * 3)
                 m.kill()
 
+        for _ in range(randint(0, 1)):
+            Particle((randint(WIDTH // 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
+                     (-1, 0), dokill=False)
 
         all_sprites.update()
         all_sprites.draw(screen)
         player_group.draw(screen)
-        particles_sprites.update()
         particles_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
@@ -280,13 +284,15 @@ class Player(AnimatedSprite):
             self.speedy -= self.acceleration - self.value
 
     def update(self):
+        global coeff
         if self.rect.top <= -20:
             self.speedy = 1
         self.time += 1
         if self.rect.bottom >= HEIGHT + 20:
             self.kill()
-            for i in garbage:
+            for i in all_sprites:
                 i.kill()
+            coeff = 0.5
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
         self.speedy += self.G
@@ -311,8 +317,8 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0):
-        super().__init__(particles_sprites)
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True):
+        super().__init__(particles_sprites, all_sprites)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
         self.image = self.pictures[self.image_ind]
@@ -329,6 +335,8 @@ class Particle(pygame.sprite.Sprite):
 
         # гравитация будет одинаковой (значение константы)
         self.gravity = gravity
+
+        self.dokill = dokill
 
     def update(self):
         self.time += 1
@@ -347,10 +355,10 @@ class Particle(pygame.sprite.Sprite):
 
         if self.change(self.time):
             self.image_ind += 1
-            if self.image_ind == len(self.pictures):
+            if self.image_ind == len(self.pictures) and self.dokill:
                 self.kill()
                 return
-            self.image = self.pictures[self.image_ind]
+            self.image = self.pictures[self.image_ind % len(self.pictures)]
             x, y = self.rect.x, self.rect.y
             self.rect = self.image.get_rect()
             self.rect.x, self.rect.y = x, y
