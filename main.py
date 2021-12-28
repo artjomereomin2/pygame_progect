@@ -76,7 +76,6 @@ class Garbage(pygame.sprite.Sprite):
         if self.rect.y >= HEIGHT or self.rect.x < -36:
             self.kill()
         self.gravitate += GRAVITY
-        self.image = load_image("garbage.png", -1, (100, 100), degrees(atan(self.gravitate / 3)) + 180)
 
 
 def terminate():
@@ -106,7 +105,7 @@ def start_screen():
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
-        print(intro_rect.x, intro_rect.y)
+        # print(intro_rect.x, intro_rect.y)
 
     # (0, 0, 0,50), ((10, 200), (mx_right, text_coord - 200))
     image = pygame.Surface([WIDTH, text_coord - 200])
@@ -139,14 +138,6 @@ def main_game():
                 if event.key == pygame.K_SPACE:
                     player.move()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == pygame.BUTTON_RIGHT:
-                    # то, что происходит при столкновении с мусором
-                    particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
-                                                    [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
-                                                     for
-                                                     x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=20,
-                                                    follow_player=True, gravity=(-1, 0), count=40))
-                    player.de_baf(10 ** 2 * 3)
                 if event.button == pygame.BUTTON_LEFT:
                     player.move()
 
@@ -170,13 +161,16 @@ def main_game():
                 i += 1
 
         # TODO протестировать мусор
-        if [1 for m in garbage if pygame.sprite.collide_mask(m, player)]:
-            particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
-                                            [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
-                                             for
-                                             x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=20,
-                                            follow_player=True, gravity=(-1, 0), count=40))
-            player.de_baf(10 ** 2 * 3)
+        for m in garbage:
+            if pygame.sprite.collide_mask(m, player):
+                particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
+                                                [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
+                                                 for
+                                                 x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=20,
+                                                follow_player=True, gravity=(-1, 0), count=40))
+                player.de_baf(10 ** 2 * 3)
+                m.kill()
+
 
         all_sprites.update()
         all_sprites.draw(screen)
@@ -261,6 +255,7 @@ class Player(AnimatedSprite):
         self.speedy = 0
         self.acceleration = 4
         self.G = 9.8 / FPS
+        self.value = 0
         self.other_image = pygame.transform.scale(load_image('hero.png', -1), (500, 150))
         other_image = self.other_image.copy()
         self.image = other_image
@@ -277,15 +272,21 @@ class Player(AnimatedSprite):
 
     def move(self):
         # print(self.rect.x, self.rect.y)
-        self.speedy -= self.acceleration if self.slow_timer == 0 else self.acceleration - self.value
+        # self.speedy -= self.acceleration
+        if self.slow_timer == 0:
+            self.speedy -= self.acceleration
+            self.value = 0
+        else:
+            self.speedy -= self.acceleration - self.value
 
     def update(self):
-        if self.rect.top <= 0:
-            self.rect.top = 0
+        if self.rect.top <= -20:
             self.speedy = 1
         self.time += 1
         if self.rect.bottom >= HEIGHT + 20:
             self.kill()
+            for i in garbage:
+                i.kill()
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
         self.speedy += self.G
@@ -297,8 +298,8 @@ class Player(AnimatedSprite):
         # print(self.rect.x, self.rect.y)
 
     def de_baf(self, time=10 ** 3, value=2):
-        self.value = value
-        self.slow_timer += time
+        self.value += value
+        self.slow_timer = time
 
 
 screen_rect = (0, 0, WIDTH, HEIGHT)
