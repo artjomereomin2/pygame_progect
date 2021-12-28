@@ -58,11 +58,16 @@ def load_image(name, colorkey=None, size=None, rotate=0):
 
 
 class Garbage(pygame.sprite.Sprite):
-    image = load_image("garbage.png", -1, (100, 100), 180)
+    image_small = load_image("garbage.png", -1, (100, 100), 180)
+    image_big = load_image("garbage.png", -1, (200, 200), 180)
 
-    def __init__(self, pos):
+    def __init__(self, pos, big=False):
         super().__init__(all_sprites, garbage)
-        self.image = Garbage.image
+        if big:
+            self.image = Garbage.image_big
+        else:
+            self.image = Garbage.image_small
+        self.big = big
         self.gravitate = 0
         self.rect = self.image.get_rect()
         # вычисляем маску для эффективного сравнения
@@ -149,7 +154,7 @@ def main_game():
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
-            Garbage((WIDTH, randint(0, HEIGHT - 100)))
+            Garbage((WIDTH, randint(0, HEIGHT - 100)), big=randint(0, 5) == 0)
         if level == 20:
             level = 0
             coeff += 0.5
@@ -172,7 +177,10 @@ def main_game():
                                                  for
                                                  x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=60,
                                                 follow_player=True, gravity=(-1, 0), count=40))
-                player.de_baf(10 ** 2 * 3)
+                if m.big == False:
+                    player.de_baf(10 ** 2 * 3)
+                else:
+                    player.de_baf(10 ** 2 * 5, 2)
                 m.kill()
 
         for _ in range(randint(0, 1)):
