@@ -18,12 +18,12 @@ player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 garbage = pygame.sprite.Group()
-iss = True
+iss = False
 G = 9.8 / FPS
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (1000, 500)
+SIZE = WIDTH, HEIGHT = (1500, 750)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -38,19 +38,25 @@ def draw(screen, level=None):
         pygame.draw.circle(screen, (randint(100, 200), randint(0, 200), 0), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
 
 
-def load_image(name, colorkey=None, size=None, rotate=0):
-    fullname = os.path.join('data', name)
-    # если файл не существует, то выходим
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    image = pygame.transform.rotate(image, rotate)
-    if colorkey is not None:
+def load_image(name, colorkeylist=None, size=None, rotate=0):
+    if isinstance(name, str):
+        fullname = os.path.join('data', name)
+        # если файл не существует, то выходим
+        if not os.path.isfile(fullname):
+            print(f"Файл с изображением '{fullname}' не найден")
+            sys.exit()
+        image = pygame.image.load(fullname)
+        image = pygame.transform.rotate(image, rotate)
+    else:
+        image = name
+    if colorkeylist is not None:
         image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
+        if colorkeylist[0] == -1:
+            colorkeylist[0] = image.get_at((0, 0))
+        image.set_colorkey(colorkeylist[0])
+        colorkeylist.pop()
+        if len(colorkeylist) > 0:
+            image = load_image(image, colorkeylist=colorkeylist, size=size)
     else:
         image = image.convert_alpha()
     if size is not None:
@@ -59,8 +65,8 @@ def load_image(name, colorkey=None, size=None, rotate=0):
 
 
 class Garbage(pygame.sprite.Sprite):
-    image_small = load_image("garbage.png", -1, (75, 75), 180)
-    image_big = load_image("garbage.png", -1, (150, 150), 180)
+    image_small = load_image("garbage.png", [-1], (75, 75), 180)
+    image_big = load_image("garbage.png", [-1], (150, 150), 180)
 
     def __init__(self, pos, big=False):
         super().__init__(all_sprites, garbage)
@@ -130,7 +136,7 @@ def start_screen():
         clock.tick(FPS)
 
 
-star_picture = load_image('star.png', -1, size=(10, 10))
+star_picture = load_image('star.png', [-1], size=(10, 10))
 
 
 def main_game():
@@ -153,8 +159,7 @@ def main_game():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT and iss:
                     player.move()
-        if iss:
-            screen.fill((0, 0, 0))
+        screen.fill((0, 0, 0))
 
         # Астероиды
         if iss:
@@ -183,7 +188,7 @@ def main_game():
             if pygame.sprite.collide_mask(m, player):
                 time = 300 + 200 * m.big
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
-                                                [load_image('fallingsmoke.png', -1, (x, x))
+                                                [load_image('fallingsmoke.png', [-1], (x, x))
                                                  for x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=time,
                                                 follow_player=True, gravity=(-1, 0), count=40))
                 if m.big == False:
@@ -280,7 +285,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
 class Player(AnimatedSprite):
     def __init__(self, pos_x, pos_y):
         # (480, 384)
-        super().__init__((player_group, all_sprites), load_image('fire.png', -1, size=None, rotate=90), 4, 5,
+        super().__init__((player_group, all_sprites), load_image('fire.png', [-1], size=None, rotate=90), 4, 5,
                          pos_x,
                          pos_y,
                          switch=lambda x: x % 10 == 0, scale_to=(100, 100))
@@ -288,15 +293,15 @@ class Player(AnimatedSprite):
         self.acceleration = 4
         self.G = 9.8 / FPS
         self.value = 0
-        # (250, 75)
-        self.other_image = load_image('hero.png', -1, (500, 150))
+        # (500, 150)
+        self.other_image = load_image('hero.png', [-1], (3000, 900))
         other_image = self.other_image.copy()
         self.image = other_image
         self.rect = self.image.get_rect()
 
         self.mask = pygame.mask.from_surface(self.image)
 
-        self.rect.centerx = pos_x
+        self.rect.centerx = pos_x - 20
         self.rect.centery = pos_y
 
         self.slow_timer = 0
