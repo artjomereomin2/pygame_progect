@@ -35,7 +35,7 @@ running = True
 def draw(screen, level=None):
     screen.fill((0, 0, 0))
     for _ in range(500):
-        pygame.draw.circle(screen, (randint(100, 255), randint(0, 150), 0), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
+        pygame.draw.circle(screen, (randint(100, 200), randint(0, 200), 0), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
 
 
 def load_image(name, colorkey=None, size=None, rotate=0):
@@ -155,9 +155,6 @@ def main_game():
                     player.move()
         if iss:
             screen.fill((0, 0, 0))
-        # Звёзды
-            if randint(0, 1) == 0:
-                draw(screen)
 
         # Астероиды
         if iss:
@@ -199,12 +196,16 @@ def main_game():
         if randint(0, 1) and iss:
             Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
                      (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
+            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                     [star_picture],
+                     (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
 
         if iss:
             all_sprites.update()
-        all_sprites.draw(screen)
+        stars_sprites.draw(screen)
         player_group.draw(screen)
         particles_sprites.draw(screen)
+        garbage.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
