@@ -23,7 +23,7 @@ G = 9.8 / FPS
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (1000, 440)
+SIZE = WIDTH, HEIGHT = (1000, 500)
 
 screen = pygame.display.set_mode(SIZE)
 
@@ -34,8 +34,8 @@ running = True
 
 def draw(screen, level=None):
     screen.fill((0, 0, 0))
-    for _ in range(1000):
-        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)), (randint(0, WIDTH), randint(0, HEIGHT)), 2, width=0)
+    for _ in range(500):
+        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
 
 
 def load_image(name, colorkey=None, size=None, rotate=0):
@@ -59,8 +59,8 @@ def load_image(name, colorkey=None, size=None, rotate=0):
 
 
 class Garbage(pygame.sprite.Sprite):
-    image_small = load_image("garbage.png", -1, (100, 100), 180)
-    image_big = load_image("garbage.png", -1, (200, 200), 180)
+    image_small = load_image("garbage.png", -1, (75, 75), 180)
+    image_big = load_image("garbage.png", -1, (150, 150), 180)
 
     def __init__(self, pos, big=False):
         super().__init__(all_sprites, garbage)
@@ -103,7 +103,7 @@ def start_screen():
     text_coord = 200
     mx_right = 0
     for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color((239, 239, 239)))
+        string_rendered = font.render(line, True, pygame.Color(239, 239, 239))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -144,30 +144,35 @@ def main_game():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE and iss:
                     player.move()
                 if event.key == pygame.K_e:
                     iss = False
                 if event.key == pygame.K_c:
                     iss = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == pygame.BUTTON_LEFT:
+                if event.button == pygame.BUTTON_LEFT and iss:
                     player.move()
+        if iss:
+            screen.fill((0, 0, 0))
+        # Звёзды
+            if sec % randint(2, 9) == 0:
+                draw(screen)
 
-        screen.fill((0, 0, 0))
-        if sec % randint(2, 9) == 0:
-            draw(screen)
+        # Астероиды
         if iss:
             sec += 1
         if sec == int(FPS / coeff):
             sec = 0
             level += 1
-            Garbage((WIDTH, randint(0, HEIGHT - 100)), big=randint(0, 5) == 0)
+            big = randint(0, 10) == 0
+            Garbage((WIDTH, randint(0, HEIGHT - 75 * (1 + big))), big=big)
         if level == 20:
             level = 0
             coeff += 0.5
-        if coeff >= FPS / 2:
-            coeff = 0.5
+        if coeff >= FPS / 25:
+            coeff = -1
+
         i = 0
         while i < len(particles) and iss:
             p = particles[i]
@@ -176,24 +181,25 @@ def main_game():
             else:
                 p.update()
                 i += 1
-
-        # TODO протестировать мусор
+        # Столкновение
         for m in garbage:
             if pygame.sprite.collide_mask(m, player):
+                time = 300 + 200 * m.big
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
-                                                [pygame.transform.scale(load_image('fallingsmoke.png', -1), (x, x))
-                                                 for
-                                                 x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=60,
+                                                [load_image('fallingsmoke.png', -1, (x, x))
+                                                 for x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=time,
                                                 follow_player=True, gravity=(-1, 0), count=40))
                 if m.big == False:
-                    player.de_baf(10 ** 2 * 3)
+                    player.de_baf(time)
                 else:
-                    player.de_baf(10 ** 2 * 5, 2)
+                    player.de_baf(time, 2)
                 m.kill()
 
-        for _ in range(randint(0, 1)):
-            Particle((randint(WIDTH // 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
+        # Кометы
+        if randint(0, 1) and iss:
+            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
                      (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
+
         if iss:
             all_sprites.update()
         all_sprites.draw(screen)
@@ -204,7 +210,7 @@ def main_game():
 
 
 def end_screen(time):
-    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь(кроме пробела и ЛКМ), чтобы продолжить"]
+    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь, чтобы продолжить"]
 
     fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -212,7 +218,7 @@ def end_screen(time):
     text_coord = 300
     mx_right = 0
     for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color((239, 239, 239)))
+        string_rendered = font.render(line, True, pygame.Color(239, 239, 239))
         intro_rect = string_rendered.get_rect()
         mx_right = max(mx_right, intro_rect.x)
         text_coord += 10
@@ -225,13 +231,15 @@ def end_screen(time):
     image.fill((0, 0, 0))
     image.set_alpha(50)
     screen.blit(image, (0, 300))
+    timer = 0
 
     while True:
+        timer += clock.tick()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN and event.key != pygame.K_SPACE or \
-                    event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_RIGHT:
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
                 return main_game()
         pygame.display.flip()
         clock.tick(FPS)
@@ -270,7 +278,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
 class Player(AnimatedSprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__((player_group, all_sprites), pygame.transform.rotate(load_image('fire.png', -1), 90), 4, 5,
+        # (480, 384)
+        super().__init__((player_group, all_sprites), load_image('fire.png', -1, size=None, rotate=90), 4, 5,
                          pos_x,
                          pos_y,
                          switch=lambda x: x % 10 == 0, scale_to=(100, 100))
@@ -278,7 +287,8 @@ class Player(AnimatedSprite):
         self.acceleration = 4
         self.G = 9.8 / FPS
         self.value = 0
-        self.other_image = pygame.transform.scale(load_image('hero.png', -1), (500, 150))
+        # (250, 75)
+        self.other_image = load_image('hero.png', -1, (500, 150))
         other_image = self.other_image.copy()
         self.image = other_image
         self.rect = self.image.get_rect()
@@ -313,7 +323,7 @@ class Player(AnimatedSprite):
             end_screen(self.time / FPS)
         self.slow_timer = max(0, self.slow_timer - 1)
         self.speedy += self.G
-        self.rect.y += self.speedy
+        self.rect.y += int(self.speedy)
         other_image = self.other_image.copy()
         other_image.blit(super().update(), (160, 30))
         self.image = other_image
@@ -407,7 +417,7 @@ class SpawnParticles:
                 # print(self.time, self.times)
                 for _ in range(self.count):
                     Particle(self.pos, *self.speed, self.pictures, self.gravity, self.change)
-                self.times -= 1
+            self.times -= 1
             self.time += 1
 
 
