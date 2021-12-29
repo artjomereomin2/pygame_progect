@@ -35,7 +35,7 @@ running = True
 def draw(screen, level=None):
     screen.fill((0, 0, 0))
     for _ in range(500):
-        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
+        pygame.draw.circle(screen, (randint(100, 255), randint(0, 150), 0), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
 
 
 def load_image(name, colorkey=None, size=None, rotate=0):
@@ -156,7 +156,7 @@ def main_game():
         if iss:
             screen.fill((0, 0, 0))
         # Звёзды
-            if sec % randint(2, 9) == 0:
+            if randint(0, 1) == 0:
                 draw(screen)
 
         # Астероиды
