@@ -12,6 +12,26 @@ sec = 0
 coeff = 0.5
 level = 0
 
+# . is empty
+# # is wall
+# @ is player
+# $ is merchant
+# <... is goods for sale(player can buy them)
+# >... is empty place that needs goods(player can sell them)
+PLANETS = [
+'''. . . # # # . . . .
+. . # # . # . # # # 
+. # # . . # # # . .
+. # . . . . . . . .
+. . . . @ . . # . .
+. # # . . # # # . .
+. . # . . # . . . .
+. # # . # # . # . #
+. # . . . . . . # #
+. # . . . . . # # .
+. # # # # # # # . .''',
+]
+
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
@@ -143,6 +163,7 @@ class PlanetView(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(planet_images[num], (100, 100))
         self.rect = self.image.get_rect()
         print(pos)
+        self.num = num
         self.rect.x, self.rect.y = pos[0], pos[1]
         self.player_here = player_here
 
@@ -172,7 +193,7 @@ def map_selection():
                     if planet.rect.collidepoint(*event.pos):
                         if planet.player_here:
                             # TODO player should see planet interface
-                            ...
+                            planet_game(planet.num)
                         else:
                             res = flight_game()
                             if res == True:  # flight is successful
@@ -192,12 +213,132 @@ def map_selection():
         clock.tick(FPS)
 
 
+# TODO fix everything about view
+def generate_level(level):
+    new_player, x, y = None, None, None
+    print(level)
+    for y in range(len(level)):
+        for x in range(len(level[y].split(' '))):
+            if level[y].split(' ')[x] == '.':
+                Tile('empty', x, y)
+            elif level[y].split(' ')[x] == '#':
+                Tile('wall', x, y)
+            elif level[y].split(' ')[x] == '@':
+                Tile('empty', x, y)
+                new_player = PlayerOnPlanet(x, y)
+    # вернем игрока, а также размер поля в клетках
+    return new_player, x + 1, y + 1
+
+
+tile_images = {
+    'wall': load_image('box.png'),
+    'empty': load_image('grass.png')
+}
+
+# TODO find picture for player on planet
+player_image = load_image('player_on_planet.png', -1)
+
+tile_width = tile_height = 40
+
+tiles_group = pygame.sprite.Group()
+player_on_planet_group = pygame.sprite.Group()
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        self.type = tile_type
+        super().__init__(tiles_group, all_sprites)
+        self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+
+
+class PlayerOnPlanet(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(player_group, all_sprites)
+        self.image = pygame.transform.scale(player_image, (
+            tile_width, tile_height))
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+
+    def move(self, x, y):
+        # print(self.rect.x, self.rect.y)
+        self.rect.x += x
+        self.rect.y += y
+        '''print([q for q in pygame.sprite.spritecollide(self, all_sprites, False) if
+               type(q) == Tile and q.type == 'wall'])'''
+        if len([1 for q in pygame.sprite.spritecollide(self, all_sprites, False) if
+                type(q) == Tile and q.type == 'wall']):
+            self.rect.x -= x
+            self.rect.y -= y
+
+        # print(self.rect.x, self.rect.y)
+
+
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+        # print(obj.rect.x,obj.rect.y,level_x * tile_width,level_y * tile_height)
+        obj.rect.x = obj.rect.x % (level_x * tile_width)
+        obj.rect.y = obj.rect.y % (level_y * tile_height)
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+
+
+def planet_game(num):
+    planet = PLANETS[num]
+    particles = []
+    global level_x, level_y
+    player, level_x, level_y = generate_level(planet.split('\n'))
+    camera = Camera()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    player.move(tile_width, 0)
+                elif event.key == pygame.K_LEFT:
+                    player.move(-tile_width, 0)
+                elif event.key == pygame.K_DOWN:
+                    player.move(0, tile_height)
+                elif event.key == pygame.K_UP:
+                    player.move(0, -tile_height)
+
+        # изменяем ракурс камеры
+        camera.update(player)
+        # обновляем положение всех спрайтов
+        for sprite in all_sprites:
+            camera.apply(sprite)
+        screen.fill((0, 0, 0))
+        for p in particles:
+            p.update()
+
+        all_sprites.update()
+        all_sprites.draw(screen)
+        player_group.draw(screen)
+        particles_sprites.update()
+        particles_sprites.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 star_picture = load_image('star.png', -1, size=(10, 10))
 
 
 def flight_game():
     global player, coeff, sec, level, iss
-    player = Player(100, HEIGHT // 2)
+    player = FlyingPlayer(100, HEIGHT // 2)
     particles = []
     global level_x, level_y
 
@@ -297,6 +438,8 @@ def flight_game():
                 return main_game()
         pygame.display.flip()
         clock.tick(FPS)'''
+
+
 # do not need this
 
 class AnimatedSprite(pygame.sprite.Sprite):
@@ -330,7 +473,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         return self.frames[self.cur_frame]
 
 
-class Player(AnimatedSprite):
+class FlyingPlayer(AnimatedSprite):
     def __init__(self, pos_x, pos_y):
         super().__init__((player_group, all_sprites), pygame.transform.rotate(load_image('fire.png', -1), 90), 4, 5,
                          pos_x,
