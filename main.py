@@ -18,24 +18,20 @@ player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 garbage = pygame.sprite.Group()
-iss = False
+
+iss = True
+
 G = 9.8 / FPS
 
 pygame.init()
 
-SIZE = WIDTH, HEIGHT = (1500, 750)
+SIZE = WIDTH, HEIGHT = (1200, 600)
 
 screen = pygame.display.set_mode(SIZE)
 
 clock = pygame.time.Clock()
 
 running = True
-
-
-def draw(screen, level=None):
-    screen.fill((0, 0, 0))
-    for _ in range(500):
-        pygame.draw.circle(screen, (randint(100, 200), randint(0, 200), 0), (randint(0, WIDTH), randint(0, HEIGHT)), 2, 0)
 
 
 def load_image(name, colorkeylist=None, size=None, rotate=0):
@@ -199,7 +195,8 @@ def main_game():
 
         # Кометы
         if randint(0, 1) and iss:
-            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
+            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                     [star_picture],
                      (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
             Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                      [star_picture],
@@ -240,12 +237,11 @@ def end_screen(time):
     timer = 0
 
     while True:
-        timer += clock.tick()
+        timer += clock.tick() + 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
+            elif (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and timer >= 100:
                 return main_game()
         pygame.display.flip()
         clock.tick(FPS)
@@ -293,15 +289,14 @@ class Player(AnimatedSprite):
         self.acceleration = 4
         self.G = 9.8 / FPS
         self.value = 0
-        # (500, 150)
-        self.other_image = load_image('hero.png', [-1], (3000, 900))
+        self.other_image = load_image('hero.png', [-1], (500, 150))
         other_image = self.other_image.copy()
         self.image = other_image
         self.rect = self.image.get_rect()
 
         self.mask = pygame.mask.from_surface(self.image)
 
-        self.rect.centerx = pos_x - 20
+        self.rect.centerx = pos_x
         self.rect.centery = pos_y
 
         self.slow_timer = 0
@@ -350,7 +345,8 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True, groups=(all_sprites, particles_sprites)):
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True,
+                 groups=(all_sprites, particles_sprites)):
         super().__init__(*groups)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
