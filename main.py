@@ -164,7 +164,7 @@ def main_game():
             sec = 0
             level += 1
             big = randint(0, 10) == 0
-            Garbage((WIDTH, randint(5, HEIGHT - 130 * (0.6 + big))), big=big)
+            Garbage((WIDTH, randint(20 - 10 * big, HEIGHT - 110 * (1 + big))), big=big)
         if level == 20:
             level = 0
             coeff += 0.5
