@@ -288,7 +288,7 @@ class Player(AnimatedSprite):
         self.speedy = 0
         self.acceleration = 4
         self.G = 9.8 / FPS
-        self.value = 0
+        self.slow = []
         self.other_image = load_image('hero.png', [-1], (500, 150))
         other_image = self.other_image.copy()
         self.image = other_image
@@ -299,18 +299,18 @@ class Player(AnimatedSprite):
         self.rect.centerx = pos_x
         self.rect.centery = pos_y
 
-        self.slow_timer = 0
-
         self.time = 0
 
     def move(self):
         # print(self.rect.x, self.rect.y)
         # self.speedy -= self.acceleration
-        if self.slow_timer == 0:
+        if len(self.slow) == 0:
             self.speedy -= self.acceleration
-            self.value = 0
         else:
-            self.speedy -= self.acceleration - self.value
+            value = 0
+            for _, v in self.slow:
+                value += v
+            self.speedy -= self.acceleration - value
 
     def update(self):
         global coeff
@@ -322,7 +322,13 @@ class Player(AnimatedSprite):
                 i.kill()
             coeff = 0.5
             end_screen(self.time / FPS)
-        self.slow_timer = max(0, self.slow_timer - 1)
+        i = 0
+        while i < len(self.slow):
+            self.slow[i][0] -= 1
+            if self.slow[i][0] == 0:
+                self.slow.pop(i)
+                i -= 1
+            i += 1
         self.speedy += self.G
         self.rect.y += int(self.speedy)
         other_image = self.other_image.copy()
@@ -332,8 +338,7 @@ class Player(AnimatedSprite):
         # print(self.rect.x, self.rect.y)
 
     def de_baf(self, time=10 ** 3, value=1):
-        self.value += value
-        self.slow_timer = time
+        self.slow.append([time, value])
 
 
 screen_rect = (0, 0, WIDTH, HEIGHT)
@@ -421,6 +426,8 @@ class SpawnParticles:
                     Particle(self.pos, *self.speed, self.pictures, self.gravity, self.change)
             self.times -= 1
             self.time += 1
+        else:
+            self.alive = -1
 
 
 start_screen()
