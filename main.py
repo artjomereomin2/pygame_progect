@@ -8,16 +8,13 @@ FPS = 50
 
 # основной персонаж
 player = None
-sec = 0
-coeff = 0.5
-level = 0
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
-garbage = pygame.sprite.Group()
+garbage_group = pygame.sprite.Group()
 
 iss = True
 
@@ -65,7 +62,7 @@ class Garbage(pygame.sprite.Sprite):
     image_big = load_image("garbage.png", [-1], (150, 150), 180)
 
     def __init__(self, pos, big=False):
-        super().__init__(all_sprites, garbage)
+        super().__init__(all_sprites, garbage_group)
         if big:
             self.image = Garbage.image_big
         else:
@@ -136,9 +133,12 @@ star_picture = load_image('star.png', [-1], size=(10, 10))
 
 
 def main_game():
-    global player, coeff, sec, level, iss
+    global player, iss
     player = Player(100, HEIGHT // 2)
     particles = []
+    sec = 0
+    coeff = 0.5
+    level = 0
     global level_x, level_y
 
     while True:
@@ -180,7 +180,7 @@ def main_game():
                 p.update()
                 i += 1
         # Столкновение
-        for m in garbage:
+        for m in garbage_group:
             if pygame.sprite.collide_mask(m, player):
                 time = 300 + 200 * m.big
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
@@ -207,7 +207,7 @@ def main_game():
         stars_sprites.draw(screen)
         player_group.draw(screen)
         particles_sprites.draw(screen)
-        garbage.draw(screen)
+        garbage_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
