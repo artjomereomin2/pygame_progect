@@ -168,7 +168,7 @@ def main_game():
         if level == 20:
             level = 0
             coeff += 0.5
-        if coeff >= FPS / 20:
+        if coeff >= FPS / 25:
             coeff = -1
 
         i = 0
