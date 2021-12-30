@@ -59,7 +59,7 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
 
 class Garbage(pygame.sprite.Sprite):
     image_small = load_image("garbage.png", [-1], (75, 75), 180)
-    image_big = load_image("garbage.png", [-1], (150, 150), 180)
+    image_big = load_image("big_garbage.png", [-1], (200, 200))
 
     def __init__(self, pos, big=False):
         super().__init__(all_sprites, garbage_group)
@@ -164,11 +164,11 @@ def main_game():
             sec = 0
             level += 1
             big = randint(0, 10) == 0
-            Garbage((WIDTH, randint(0, HEIGHT - 75 * (1 + big))), big=big)
+            Garbage((WIDTH, randint(5, HEIGHT - 130 * (0.6 + big))), big=big)
         if level == 20:
             level = 0
             coeff += 0.5
-        if coeff >= FPS / 25:
+        if coeff >= FPS / 20:
             coeff = -1
 
         i = 0
@@ -182,7 +182,7 @@ def main_game():
         # Столкновение
         for m in garbage_group:
             if pygame.sprite.collide_mask(m, player):
-                time = 300 + 200 * m.big
+                time = 400 + 200 * m.big
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
                                                 [load_image('fallingsmoke.png', [-1], (x, x))
                                                  for x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=time,
