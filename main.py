@@ -35,7 +35,8 @@ running = True
 def draw(screen, level=None):
     screen.fill((0, 0, 0))
     for _ in range(1000):
-        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)), (randint(0, WIDTH), randint(0, HEIGHT)), 2, width=0)
+        pygame.draw.circle(screen, (randint(100, 255), randint(50, 255), randint(150, 255)),
+                           (randint(0, WIDTH), randint(0, HEIGHT)), 2, width=0)
 
 
 def load_image(name, colorkey=None, size=None, rotate=0):
@@ -125,7 +126,68 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return main_game()
+                return map_selection()
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+planets = pygame.sprite.Group()
+
+# TODO make cool planet images
+planet_images = [load_image('garbage.png', rotate=i, colorkey=-1) for i in range(0, 180, 30)]
+
+
+class PlanetView(pygame.sprite.Sprite):
+    def __init__(self, pos, num, player_here=False, **other):
+        super(PlanetView, self).__init__(planets)
+        self.image = pygame.transform.scale(planet_images[num], (100, 100))
+        self.rect = self.image.get_rect()
+        print(pos)
+        self.rect.x, self.rect.y = pos[0], pos[1]
+        self.player_here = player_here
+
+
+def map_selection():
+    # TODO find space.png for background
+    fon = pygame.Surface([WIDTH, HEIGHT])
+    fon.fill((0, 0, 0))
+    screen.blit(fon, (0, 0))
+    # fon = pygame.transform.scale(load_image('space.png'), (WIDTH, HEIGHT))
+
+    screen.blit(fon, (0, 0))
+    # planets are spawning
+    for i in range(6):
+        if i == 0:
+            PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=True)
+        else:
+            PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # TODO if player die flight_game should return False else (he flies successfully to the end) True
+                for planet in planets:
+                    if planet.rect.collidepoint(*event.pos):
+                        if planet.player_here:
+                            # TODO player should see planet interface
+                            ...
+                        else:
+                            res = flight_game()
+                            if res == True:  # flight is successful
+                                for start_planet in planets:
+                                    if start_planet.player_here:
+                                        start_planet.player_here = False
+                                        break
+                            planet.player_here = True
+                            break
+        # TODO show where we are
+        planets.draw(screen)
+        for planet in planets:
+            if planet.player_here:
+                pygame.draw.circle(screen, (0, 255, 0), planet.rect.center, 10)
+                break
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -133,7 +195,7 @@ def start_screen():
 star_picture = load_image('star.png', -1, size=(10, 10))
 
 
-def main_game():
+def flight_game():
     global player, coeff, sec, level, iss
     player = Player(100, HEIGHT // 2)
     particles = []
@@ -203,7 +265,7 @@ def main_game():
         clock.tick(FPS)
 
 
-def end_screen(time):
+'''def end_screen(time):
     intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь(кроме пробела и ЛКМ), чтобы продолжить"]
 
     fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
@@ -234,8 +296,8 @@ def end_screen(time):
                     event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_RIGHT:
                 return main_game()
         pygame.display.flip()
-        clock.tick(FPS)
-
+        clock.tick(FPS)'''
+# do not need this
 
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, groups, sheet, columns, rows, x, y, scale_to=None, switch=lambda x: True):
@@ -334,7 +396,8 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True, groups=(all_sprites, particles_sprites)):
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True,
+                 groups=(all_sprites, particles_sprites)):
         super().__init__(*groups)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
