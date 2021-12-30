@@ -129,7 +129,8 @@ def start_screen():
         clock.tick(FPS)
 
 
-star_picture = load_image('star.png', [-1], size=(10, 10))
+star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
+star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
 
 
 def main_game():
@@ -165,11 +166,13 @@ def main_game():
             level += 1
             big = randint(0, 10) == 0
             Garbage((WIDTH, randint(20 - 10 * big, HEIGHT - 110 * (1 + big))), big=big)
+        # При увеличении порога level время растёт по закону 7.32 * level - 0.04 (в секундах)
         if level == 20:
             level = 0
             coeff += 0.5
         if coeff >= FPS / 25:
             coeff = -1
+            print(player.time / FPS)
 
         i = 0
         while i < len(particles) and iss:
@@ -194,13 +197,12 @@ def main_game():
                 m.kill()
 
         # Кометы
+        star_picture = random.choice((star_red_picture, star_blue_picture, star_blue_picture))
         if randint(0, 1) and iss:
-            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
-                     [star_picture],
-                     (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
-            Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
-                     [star_picture],
-                     (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
+            for _ in range(3):
+                Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                         [star_picture],
+                         (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
 
         if iss:
             all_sprites.update()
