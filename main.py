@@ -172,7 +172,6 @@ def main_game(level_max):
             coeff += 0.5
         if coeff >= FPS / 25:
             coeff = -1
-            print(player.time / FPS)
 
         i = 0
         while i < len(particles) and iss:
