@@ -124,7 +124,7 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return main_game()
+                return main_game(20)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -133,7 +133,7 @@ star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
 star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
 
 
-def main_game():
+def main_game(level_max):
     global player, iss
     player = Player(100, HEIGHT // 2)
     particles = []
@@ -167,7 +167,7 @@ def main_game():
             big = randint(0, 10) == 0
             Garbage((WIDTH, randint(20 - 10 * big, HEIGHT - 110 * (1 + big))), big=big)
         # При увеличении порога level время растёт по закону 7.32 * level - 0.04 (в секундах)
-        if level == 20:
+        if level == level_max:
             level = 0
             coeff += 0.5
         if coeff >= FPS / 25:
@@ -244,7 +244,7 @@ def end_screen(time):
             if event.type == pygame.QUIT:
                 terminate()
             elif (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and timer >= 100:
-                return main_game()
+                return main_game(20)
         pygame.display.flip()
         clock.tick(FPS)
 
