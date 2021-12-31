@@ -8,9 +8,6 @@ FPS = 50
 
 # основной персонаж
 player = None
-sec = 0
-coeff = 0.5
-level = 0
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
@@ -18,7 +15,6 @@ player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 garbage = pygame.sprite.Group()
-iss = True
 G = 9.8 / FPS
 
 pygame.init()
@@ -50,7 +46,7 @@ running = True
 # . . . . . . . #
 '''
 
-# TODO add exit from planet
+# TODO add more different planets
 PLANETS = [
     '''. . . . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -70,6 +66,8 @@ PLANETS = [
 . . . . . . . . . . . . # . $ . $ . $ . # . . . . . .
 . . . . . . . . . . . . # # # # # # # # # . . . . . .''',
 ]
+
+PLANET_NAMES = ['EYRQAI101']
 
 
 def draw(screen, level=None):
@@ -130,7 +128,6 @@ info_about_goods_to_sell = {
 table = load_image('table.png')
 
 
-# TODO add trade logic
 
 class Garbage(pygame.sprite.Sprite):
     image_small = load_image("garbage.png", -1, (100, 100), 180)
@@ -185,7 +182,6 @@ def start_screen():
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
-        # print(intro_rect.x, intro_rect.y)
 
     # (0, 0, 0,50), ((10, 200), (mx_right, text_coord - 200))
     image = pygame.Surface([WIDTH, text_coord - 200])
@@ -215,7 +211,6 @@ class PlanetView(pygame.sprite.Sprite):
         super(PlanetView, self).__init__(planets)
         self.image = pygame.transform.scale(planet_images[num], (100, 100))
         self.rect = self.image.get_rect()
-        print(pos)
         self.num = num
         self.rect.x, self.rect.y = pos[0], pos[1]
         self.player_here = player_here
@@ -241,11 +236,9 @@ def map_selection():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # TODO if player die flight_game should return False else (he flies successfully to the end) True
                 for planet in planets:
                     if planet.rect.collidepoint(*event.pos):
                         if planet.player_here:
-                            # TODO player should see planet interface
                             planet_game(planet.num)
                         else:
                             res = flight_game()
@@ -254,9 +247,9 @@ def map_selection():
                                     if start_planet.player_here:
                                         start_planet.player_here = False
                                         break
-                            planet.player_here = True
+                                planet.player_here = True
                             break
-        # TODO show where we are
+        # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
         for planet in planets:
@@ -268,10 +261,8 @@ def map_selection():
         clock.tick(FPS)
 
 
-# TODO fix everything about view
 def generate_level(level):
     new_player, x, y = None, None, None
-    print(level)
     for y in range(len(level)):
         for x in range(len(level[y].split(' '))):
             if level[y].split(' ')[x] == '.':
@@ -289,7 +280,6 @@ def generate_level(level):
                 Tile('exit', x, y)
             else:
                 s = level[y].split(' ')[x]
-                print(s)
                 Tile(s[0] + goods[int(s[1:])], x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1
@@ -317,7 +307,7 @@ class Tile(pygame.sprite.Sprite):
         self.type = tile_type
         super().__init__(tiles_group, all_sprites)
         if tile_type == 'ship':
-            # TODO show to player that ship is here
+            # TODO show to player that ship is here(design)
             self.image = load_image('hero.png', -1, (3 * tile_width, 3 * tile_height))
             self.rect = self.image.get_rect()
             self.rect.bottom = tile_height * pos_y + tile_height
@@ -357,17 +347,13 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
     def move(self, x, y):
-        # print(self.rect.x, self.rect.y)
         self.rect.x += x
         self.rect.y += y
-        '''print([q for q in pygame.sprite.spritecollide(self, all_sprites, False) if
-               type(q) == Tile and q.type == 'wall'])'''
         if len([1 for q in pygame.sprite.spritecollide(self, all_sprites, False) if
                 type(q) == Tile and q.type == 'wall']):
             self.rect.x -= x
             self.rect.y -= y
 
-        # print(self.rect.x, self.rect.y)
 
     def buy(self, name, cost, count):
         global have
@@ -376,7 +362,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             have[name] += count
         else:
             send_message(f'You have not enough FUEL to buy {count} {name} for {cost} FUEL')
-        print(have)
+
 
     def sell(self, name, cost, count):
         global have
@@ -385,7 +371,6 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             have['FUEL'] += cost
         else:
             send_message(f'You have not enough {name} to sell {count} {name} for {cost} FUEL')
-        print(have)
 
 
 class Camera:
@@ -398,7 +383,6 @@ class Camera:
     def apply(self, obj):
         obj.rect.x += self.dx
         obj.rect.y += self.dy
-        # print(obj.rect.x,obj.rect.y,level_x * tile_width,level_y * tile_height)
         obj.rect.x = obj.rect.x % (level_x * tile_width)
         obj.rect.y = obj.rect.y % (level_y * tile_height)
 
@@ -408,10 +392,52 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
+default_message = []
+
+text_to_blit = []
+
+
+def blit_text(screen):
+    while len(text_to_blit) > 2:
+        text_to_blit.pop(0)
+    font = pygame.font.Font(None, 25)
+    text_top = 0
+    res = []
+    for message in text_to_blit:
+        res.extend(message)
+    message = default_message.copy()
+    message.extend(res)
+    for line in message:
+        text = font.render(line, True, (255, 255, 255))
+        text_x = WIDTH - 165
+        text_y = text_top
+        text_w = text.get_width()
+        text_h = text.get_height()
+
+        rect = pygame.Surface([text_w, text_h])
+        rect.fill((0, 0, 0))
+        rect.set_alpha(90)
+        screen.blit(rect, (text_x, text_y))
+
+        screen.blit(text, (text_x, text_y))
+        text_top += 20
+
+
+def line_text(text):
+    lines = ['']
+    i = 0
+    for word in text.split():
+        if len(lines[i]) + len(word) + 1 < 20:
+            lines[i] += ' ' + word
+        else:
+            lines.append(word)
+            i += 1
+    return lines
+
+
 def send_message(text):
-    pass
-    print(text)
-    # TODO show text to player
+    lines = line_text(text)
+    text_to_blit.append(lines)
 
 
 def find_tile(player):
@@ -461,9 +487,12 @@ def show_parameters(screen):
     screen.blit(text, (text_x, text_y))
 
 
-
 def planet_game(num):
+    # TODO change trade places randomly
+    global default_message, text_to_blit
     planet = PLANETS[num]
+    default_message = line_text(f'Now you are on the planet {PLANET_NAMES[num]}')
+    text_to_blit = []
     particles = []
     global level_x, level_y
     player, level_x, level_y = generate_level(planet.split('\n'))
@@ -489,7 +518,6 @@ def planet_game(num):
                 elif event.key == pygame.K_RETURN:
                     # TODO smarter system of finding tile player on
                     tile = find_tile(player)
-                    print(tile.type)
                     if tile.type == 'exit':
                         for sp in all_sprites:
                             sp.kill()
@@ -515,6 +543,7 @@ def planet_game(num):
         particles_sprites.update()
         particles_sprites.draw(screen)
         show_parameters(screen)
+        blit_text(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -523,10 +552,15 @@ star_picture = load_image('star.png', -1, size=(10, 10))
 
 
 def flight_game():
-    global player, coeff, sec, level, iss
+    global player
+    iss = True
+    sec = 0
+    coeff = 0.75
+    level = 0
     player = FlyingPlayer(100, HEIGHT // 2)
     particles = []
     global level_x, level_y
+    ended = 0
 
     while True:
         for event in pygame.event.get():
@@ -542,21 +576,22 @@ def flight_game():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT:
                     player.move()
-
         screen.fill((0, 0, 0))
+
         if sec % randint(2, 9) == 0:
             draw(screen)
-        if iss:
-            sec += 1
-        if sec == int(FPS / coeff):
-            sec = 0
-            level += 1
-            Garbage((WIDTH, randint(0, HEIGHT - 100)), big=randint(0, 5) == 0)
-        if level == 20:
-            level = 0
-            coeff += 0.5
-        if coeff >= FPS / 2:
-            coeff = 0.5
+        if not ended:
+            if iss:
+                sec += 1
+            if sec == int(FPS / coeff) // 2:
+                sec = 0
+                level += 1
+                Garbage((WIDTH, randint(0, HEIGHT - 100)), big=randint(0, 5) == 0)
+            if level == 20:
+                level = 0
+                coeff += 0.5
+            if coeff >= FPS / 2:
+                coeff = 0.5
         i = 0
         while i < len(particles) and iss:
             p = particles[i]
@@ -566,7 +601,6 @@ def flight_game():
                 p.update()
                 i += 1
 
-        # TODO протестировать мусор
         for m in garbage:
             if pygame.sprite.collide_mask(m, player):
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
@@ -579,17 +613,33 @@ def flight_game():
                 else:
                     player.de_baf(10 ** 2 * 5, 2)
                 m.kill()
-
         for _ in range(randint(0, 1)):
             Particle((randint(WIDTH // 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5), [star_picture],
                      (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
-        if iss:
-            all_sprites.update()
-        all_sprites.draw(screen)
-        player_group.draw(screen)
-        particles_sprites.draw(screen)
+        if not ended:
+            if iss:
+                all_sprites.update()
+            if not player.alive():
+                return False
+            all_sprites.draw(screen)
+            player_group.draw(screen)
+            particles_sprites.draw(screen)
+        else:
+            player_group.draw(screen)
+            particles_sprites.update()
+            particles_sprites.draw(screen)
+            stars_sprites.update()
+            stars_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
+        if level >= 15:
+            for m in garbage:
+                m.kill()
+            ended += 1
+        if ended >= 3 * 10 ** 2:
+            for sp in all_sprites:
+                sp.kill()
+            return True
 
 
 '''def end_screen(time):
@@ -684,7 +734,6 @@ class FlyingPlayer(AnimatedSprite):
         self.time = 0
 
     def move(self):
-        # print(self.rect.x, self.rect.y)
         # self.speedy -= self.acceleration
         if self.slow_timer == 0:
             self.speedy -= self.acceleration
@@ -701,7 +750,7 @@ class FlyingPlayer(AnimatedSprite):
             for i in all_sprites:
                 i.kill()
             coeff = 0.5
-            end_screen(self.time / FPS)
+            return
         self.slow_timer = max(0, self.slow_timer - 1)
         self.speedy += self.G
         self.rect.y += self.speedy
@@ -709,7 +758,6 @@ class FlyingPlayer(AnimatedSprite):
         other_image.blit(super().update(), (160, 30))
         self.image = other_image
         self.mask = pygame.mask.from_surface(self.image)
-        # print(self.rect.x, self.rect.y)
 
     def de_baf(self, time=10 ** 3, value=1):
         self.value += value
@@ -750,8 +798,6 @@ class Particle(pygame.sprite.Sprite):
     def update(self):
         self.time += 1
 
-        # print(self.rect.x, self.rect.y, self.velocity, self.gravity)
-
         # применяем гравитационный эффект:
         # движение с ускорением под действием гравитации
         self.velocity[0] += self.gravity[0]
@@ -759,8 +805,6 @@ class Particle(pygame.sprite.Sprite):
         # перемещаем частицу
         self.rect.x += self.velocity[0]
         self.rect.y += self.velocity[1]
-
-        # print(self.image_ind)
 
         if self.change(self.time):
             self.image_ind += 1
@@ -796,7 +840,6 @@ class SpawnParticles:
             if self.time % self.split == 0:
                 if self.follow_player:
                     self.pos = player.rect.centerx, player.rect.centery
-                # print(self.time, self.times)
                 for _ in range(self.count):
                     Particle(self.pos, *self.speed, self.pictures, self.gravity, self.change)
                 self.times -= 1
