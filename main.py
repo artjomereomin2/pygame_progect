@@ -46,46 +46,167 @@ running = True
 # . . . . . . . #
 '''
 
-# TODO add more different planets
-PLANETS = [
-    [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '$', '.', '$', '.', '$', '.', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '.', '.', 's', '.', '.', '@', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '.', '.', 'l', '.', '.', '.', '.', '#', '.', '>2', '.', '<1', '.', '<0', '.', '#', '.',
-      '.', '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '>1', '.', '<2', '.', '>0', '.', '#', '.',
-      '.', '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '$', '.', '$', '.', '$', '.', '#', '.', '.',
-      '.', '.', '.', '.'],
-     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
-      '.', '.', '.', '.']]
-    ,
-]
 
-PLANET_NAMES = ['EYRQAI101']
+def arr_from_str(s):
+    return [x.split(' ') for x in s.split('\n')]
+
+
+def planet_generator(n, w, h):
+    global PLANETS, PLANET_NAMES
+    letters1 = list('eyuioa')
+    letters2 = list('qwrtpsjdfghklzxcvbnm')
+    PLANETS = []
+    PLANET_NAMES = []
+    for i in range(n):
+        name = random.choice(letters1)
+        k = randint(5, 10)
+        while len(name) < k:
+            if name[-1] in letters1:
+                name += random.choice(letters2)
+            else:
+                if randint(0, 1):
+                    name += random.choice(letters1)
+                elif len(name) != k - 1:
+                    name += random.choice(letters1) + random.choice(letters1)
+        name += str(randint(100, 999))
+        PLANET_NAMES.append(name.upper())
+    print(PLANET_NAMES)
+    # TODO generate maps
+    staring_zone = arr_from_str(
+        '# # # # # # # # #\n'
+        '# . . . . . . . #\n'
+        '# . . s . . @ . #\n'
+        '# . . l . . . . #\n'
+        '# . . . . . . . #\n'
+        '# . . . . . . . #'
+    )
+    small_shop_down = arr_from_str(
+        '# # # # #\n'
+        '# . $ . #\n'
+        '# # # # #\n'
+        '# <;1 . >;1 #\n'
+        '# . . . #'
+    )
+    small_shop_up = small_shop_down[::-1]
+
+    middle_shop1_down = arr_from_str(
+        '# # # # # # #\n'
+        '# . $ . $ . #\n'
+        '# # # # # # #\n'
+        '# <;1 . >;1 . <;1 #\n'
+        '# . . . . . #\n'
+        '# # # . # # #'
+    )
+
+    middle_shop1_up = middle_shop1_down[::-1]
+
+    middle_shop2_down = arr_from_str(
+        '# # # # # # #\n'
+        '# . $ . $ . #\n'
+        '# # # # # # #\n'
+        '# >;1 . <;1 . >;1 #\n'
+        '# . . . . . #\n'
+        '# # # . # # #'
+    )
+
+    middle_shop2_up = middle_shop2_down[::-1]
+
+    big_shop_down = arr_from_str(
+        '# # # # # # # # #\n'
+        '# $ # . <;1 . # $ #\n'
+        '# # # . . . # # #\n'
+        '# . . <;1 . <;1 . . #\n'
+        '# >;1 . . . . . >;1 #\n'
+        '# . . . >;1 . . . #\n'
+        '# # # . . . # # #\n'
+        '# $ # . . . # $ #\n'
+        '# # # . . . # # #'
+    )
+
+    big_shop_up = big_shop_down[::-1]
+
+    obstacles = [
+        arr_from_str(
+            '# # # # . .\n'
+            '. # . # # #\n'
+            '# # . # . .'
+        ),
+        arr_from_str(
+            '# #\n'
+            '# #'
+        ),
+        arr_from_str(
+            '. # .\n'
+            '# # #\n'
+            '. # .'
+        ),
+        arr_from_str(
+            '# # .\n'
+            '. # #\n'
+            '# . #'
+        ),
+        arr_from_str(
+            '# . #\n'
+            '# # .\n'
+            '. # #'
+        ),
+        arr_from_str(
+            '# #\n'
+            '# .'
+        ),
+        arr_from_str(
+            '#'
+        )
+    ]
+
+    terrain = [small_shop_up, small_shop_down, middle_shop1_down, middle_shop2_down, middle_shop1_up, middle_shop1_down,
+               big_shop_down, big_shop_up] + obstacles
+
+    for _ in range(n):
+        field = [['' for i in range(w)] for j in range(h)]
+        for i in range(len(staring_zone)):
+            for j in range(len(staring_zone[i])):
+                field[i][j] = staring_zone[i][j]
+
+        problems = 0
+        while problems < 20:
+            obj = random.choice(terrain)
+            i, j = randint(0, h), randint(0, w)
+            ok = True
+            for i1 in range(i - 1, i + len(obj) + 1):
+                if not ok:
+                    break
+                for j1 in range(j - 1, j + len(obj[0]) + 1):
+                    print(field[i1 % h][j1 % w], end='\t')
+                    if field[i1 % h][j1 % w] != '':
+                        problems += 1
+                        ok = False
+                        break
+                print()
+            else:
+                print(obj)
+                print(i, j)
+                print(*[row for row in field], sep='\n')
+                # input()
+                problems = 0
+                for i1 in range(i, i + len(obj)):
+                    for j1 in range(j, j + len(obj[0])):
+                        field[i1 % h][j1 % w] = obj[i1 - i][j1 - j]
+        for i in range(len(field)):
+            for j in range(len(field[i])):
+                if field[i][j] == '':
+                    field[i][j] = '.'
+        PLANETS.append(field)
+        print(*[row for row in field], sep='\n')
+        print()
+
+    # TODO generate costs
+
+
+planet_generator(7, 50, 50)
+
+
+# TODO add more different planets
 
 
 def draw(screen, level=None):
@@ -468,7 +589,7 @@ def blit_text(screen):
     message.extend(res)
     for line in message:
         text = font.render(line, True, (255, 255, 255))
-        text_x = WIDTH - 165
+        text_x = WIDTH - 200
         text_y = text_top
         text_w = text.get_width()
         text_h = text.get_height()
