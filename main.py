@@ -48,23 +48,41 @@ running = True
 
 # TODO add more different planets
 PLANETS = [
-    '''. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . # # # # # # # # # # # # # # # # # . . . . . .
-. . . . # . . . . . . . # . $ . $ . $ . # . . . . . .
-. . . . # . . s . . @ . # # # # # # # # # . . . . . .
-. . . . # . . l . . . . # . >2 . <1 . <0 . # . . . . . .
-. . . . # . . . . . . . # . . . . . . . # . . . . . .
-. . . . # . . . . . . . # . . . . . . . # . . . . . .
-. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . # . . . . . . . # . . . . . .
-. . . . . . . . . . . . # . >1 . <2 . >0 . # . . . . . .
-. . . . . . . . . . . . # # # # # # # # # . . . . . .
-. . . . . . . . . . . . # . $ . $ . $ . # . . . . . .
-. . . . . . . . . . . . # # # # # # # # # . . . . . .''',
+    [['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '$', '.', '$', '.', '$', '.', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '.', '.', 's', '.', '.', '@', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '.', '.', 'l', '.', '.', '.', '.', '#', '.', '>2', '.', '<1', '.', '<0', '.', '#', '.',
+      '.', '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.', '.', '.', '.', '.', '.', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '>1', '.', '<2', '.', '>0', '.', '#', '.',
+      '.', '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '.', '$', '.', '$', '.', '$', '.', '#', '.', '.',
+      '.', '.', '.', '.'],
+     ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '#', '#', '#', '#', '#', '#', '#', '#', '#', '.', '.',
+      '.', '.', '.', '.']]
+    ,
 ]
 
 PLANET_NAMES = ['EYRQAI101']
@@ -126,7 +144,6 @@ info_about_goods_to_sell = {
 
 # TODO find picture of a table where player puts goods if he wants to sell them
 table = load_image('table.png')
-
 
 
 class Garbage(pygame.sprite.Sprite):
@@ -261,33 +278,39 @@ def map_selection():
         clock.tick(FPS)
 
 
+player_x, player_y = None, None
+
+
 def generate_level(level):
+    global player_x, player_y
     new_player, x, y = None, None, None
     for y in range(len(level)):
-        for x in range(len(level[y].split(' '))):
-            if level[y].split(' ')[x] == '.':
-                Tile('empty', x, y)
-            elif level[y].split(' ')[x] == '#':
-                Tile('wall', x, y)
-            elif level[y].split(' ')[x] == '@':
-                Tile('empty', x, y)
+        for x in range(len(level[y])):
+            if level[y][x] == '.':
+                Tile('.', x, y)
+            elif level[y][x] == '#':
+                Tile('#', x, y)
+            elif level[y][x] == '@':
+                Tile('.', x, y)
                 new_player = PlayerOnPlanet(x, y)
-            elif level[y].split(' ')[x] == '$':
-                Tile('merchant', x, y)
-            elif level[y].split(' ')[x] == 's':
-                Tile('ship', x, y)
-            elif level[y].split(' ')[x] == 'l':
-                Tile('exit', x, y)
+                player_x = x
+                player_y = y
+            elif level[y][x] == '$':
+                Tile('$', x, y)
+            elif level[y][x] == 's':
+                Tile('s', x, y)
+            elif level[y][x] == 'l':
+                Tile('l', x, y)
             else:
-                s = level[y].split(' ')[x]
-                Tile(s[0] + goods[int(s[1:])], x, y)
+                s = level[y][x]
+                Tile(s, x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1
 
 
 tile_images = {
-    'wall': load_image('box.png'),
-    'empty': load_image('grass.png')
+    '#': load_image('box.png'),
+    '.': load_image('grass.png')
 }
 
 # TODO find picture for player on planet
@@ -302,21 +325,24 @@ exit_image = load_image('exit.png', size=(tile_width, tile_height))
 merchants = [load_image('merchant.png')]  # TODO make many pictures of merchants
 
 
+# TODO tile.save and empty tiles transforming into < or >
+
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         self.type = tile_type
+        self.pos_x, self.pos_y = pos_x, pos_y
         super().__init__(tiles_group, all_sprites)
-        if tile_type == 'ship':
+        if tile_type == 's':
             # TODO show to player that ship is here(design)
             self.image = load_image('hero.png', -1, (3 * tile_width, 3 * tile_height))
             self.rect = self.image.get_rect()
             self.rect.bottom = tile_height * pos_y + tile_height
             self.rect.centerx = tile_width * pos_x + tile_width // 2
-        elif tile_type == 'exit':
+        elif tile_type == 'l':
             self.image = exit_image
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
-        elif tile_type == 'merchant':
+        elif tile_type == '$':
             self.image = merchants[randint(0, len(merchants) - 1)]
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
@@ -325,13 +351,43 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '<':
-            self.image = pygame.transform.scale(pictures_of_goods[tile_type[1:]], (tile_width, tile_height))
-            self.rect = self.image.get_rect().move(
-                tile_width * pos_x, tile_height * pos_y)
-        else:
-            self.image = pygame.transform.scale(table, (tile_width, tile_height))
-            self.rect = self.image.get_rect().move(
-                tile_width * pos_x, tile_height * pos_y)
+            if tile_type[1] == ';':
+                self.type = self.type[:1] + ';' + str(int(self.type[2:]) - 1)
+                if self.type == '<;0':
+                    self.type = '<' + str(randint(0, len(goods) - 1))
+                    self.image = pygame.transform.scale(pictures_of_goods[goods[int(self.type[1:])]],
+                                                        (tile_width, tile_height))
+                    self.rect = self.image.get_rect().move(
+                        tile_width * pos_x, tile_height * pos_y)
+                else:
+                    self.image = pygame.transform.scale(table, (tile_width, tile_height))
+                    self.rect = self.image.get_rect().move(
+                        tile_width * pos_x, tile_height * pos_y)
+            else:
+                self.image = pygame.transform.scale(pictures_of_goods[goods[int(tile_type[1:])]],
+                                                    (tile_width, tile_height))
+                self.rect = self.image.get_rect().move(
+                    tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] == '>':
+            if tile_type[1] == ';':
+                self.type = self.type[:1] + ';' + str(int(self.type[2:]) - 1)
+                if self.type == '>;0':
+                    self.type = '>' + str(randint(0, len(goods) - 1))
+                    self.image = pygame.transform.scale(table, (tile_width, tile_height))
+                    self.rect = self.image.get_rect().move(
+                        tile_width * pos_x, tile_height * pos_y)
+                else:
+                    self.image = pygame.transform.scale(table, (tile_width, tile_height))
+                    self.rect = self.image.get_rect().move(
+                        tile_width * pos_x, tile_height * pos_y)
+            else:
+                self.image = pygame.transform.scale(table, (tile_width, tile_height))
+                self.rect = self.image.get_rect().move(
+                    tile_width * pos_x, tile_height * pos_y)
+
+    def save(self, num):
+        if PLANETS[num][self.pos_y][self.pos_x] != '@':
+            PLANETS[num][self.pos_y][self.pos_x] = self.type
 
 
 have = {'FUEL': 1000, 'GOLD': 0, 'WATER': 0}
@@ -350,22 +406,22 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
         self.rect.x += x
         self.rect.y += y
         if len([1 for q in pygame.sprite.spritecollide(self, all_sprites, False) if
-                type(q) == Tile and q.type == 'wall']):
+                type(q) == Tile and q.type == '#']):
             self.rect.x -= x
             self.rect.y -= y
 
-
     def buy(self, name, cost, count):
         global have
+        name = goods[int(name)]
         if cost <= have['FUEL']:
             have['FUEL'] -= cost
             have[name] += count
         else:
             send_message(f'You have not enough FUEL to buy {count} {name} for {cost} FUEL')
 
-
     def sell(self, name, cost, count):
         global have
+        name = goods[int(name)]
         if count <= have[name]:
             have[name] -= count
             have['FUEL'] += cost
@@ -453,22 +509,31 @@ def show_action(player, num):
         send_message('If you want to exit the planet, press Enter')
         return None, None
     elif tile.type[0] == '<':
-        count, cost = get_info_about_goods_to_buy(tile.type[1:], num)
-        send_message(f'If you want to buy {count} {tile.type[1:]} for {cost} FUEL, press Enter')
+        cost, count = None, None
+        if tile.type[:2] == '<;':
+            send_message("There isn't anything to buy here.")
+        else:
+            count, cost = get_info_about_goods_to_buy(tile.type[1:], num)
+            send_message(f'If you want to buy {count} {goods[int(tile.type[1:])]} for {cost} FUEL, press Enter')
         return cost, count
     elif tile.type[0] == '>':
-        count, cost = get_info_about_goods_to_sell(tile.type[1:], num)
-        send_message(f'If you want to sell {count} {tile.type[1:]} for {cost} FUEL, press Enter')
+        count, cost = None, None
+        if tile.type[:2] == '>;':
+            send_message("You can't sell anything here.")
+        else:
+            count, cost = get_info_about_goods_to_sell(tile.type[1:], num)
+            send_message(f'If you want to sell {count} {goods[int(tile.type[1:])]} for {cost} FUEL, press Enter')
+
         return cost, count
     return None, None
 
 
-def get_info_about_goods_to_buy(goods, planet):
-    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_buy[goods][planet]]
+def get_info_about_goods_to_buy(good, planet):
+    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_buy[goods[int(good)]][planet]]
 
 
-def get_info_about_goods_to_sell(goods, planet):
-    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_sell[goods][planet]]
+def get_info_about_goods_to_sell(good, planet):
+    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_sell[goods[int(good)]][planet]]
 
 
 def show_parameters(screen):
@@ -495,12 +560,14 @@ def planet_game(num):
     text_to_blit = []
     particles = []
     global level_x, level_y
-    player, level_x, level_y = generate_level(planet.split('\n'))
+    player, level_x, level_y = generate_level(planet)
     camera = Camera()
     count, cost = None, None
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                for _tile in tiles_group:
+                    _tile.save(num)
                 terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
@@ -518,15 +585,27 @@ def planet_game(num):
                 elif event.key == pygame.K_RETURN:
                     # TODO smarter system of finding tile player on
                     tile = find_tile(player)
-                    if tile.type == 'exit':
+                    if tile.type == 'l':
+                        for _tile in tiles_group:
+                            _tile.save(num)
                         for sp in all_sprites:
                             sp.kill()
                         return
                     elif tile.type[0] == '<':
-                        player.buy(tile.type[1:], cost, count)
+                        if cost is not None and count is not None:
+                            player.buy(tile.type[1:], cost, count)
+                        if randint(1, 10) == 1:
+                            tile.type = '<;4'
+                            tile.image = pygame.transform.scale(table, (tile_width, tile_height))
+                            # PLANETS[num][player_x][player_y] = '<'
                         cost, count = show_action(player, num)
                     elif tile.type[0] == '>':
-                        player.sell(tile.type[1:], cost, count)
+                        if cost is not None and count is not None:
+                            player.sell(tile.type[1:], cost, count)
+                        if randint(1, 10) == 1:
+                            tile.type = '>;4'
+                            tile.image = pygame.transform.scale(table, (tile_width, tile_height))
+                            # PLANETS[num][player_x][player_y] = '>'
                         cost, count = show_action(player, num)
         # изменяем ракурс камеры
         camera.update(player)
