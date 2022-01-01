@@ -176,7 +176,7 @@ def planet_generator(n, w, h):
             obj = random.choice(terrain)
             i, j = randint(0, h), randint(0, w)
             ok = True
-            for i1 in range(i - 1, i + len(obj) + 1):
+            for i1 in range(i - 2, i + len(obj) + 2):
                 if not ok:
                     break
                 for j1 in range(j - 1, j + len(obj[0]) + 1):
@@ -343,7 +343,7 @@ def start_screen():
 planets = pygame.sprite.Group()
 
 # TODO make cool planet images
-planet_images = [load_image('garbage.png', rotate=i, colorkey=-1) for i in range(0, 180, 30)]
+planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
 
 
 class PlanetView(pygame.sprite.Sprite):
@@ -381,7 +381,7 @@ def map_selection():
                         if planet.player_here:
                             planet_game(planet.num)
                         else:
-                            res = flight_game()
+                            res = flight_game(20)
                             if res == True:  # flight is successful
                                 for start_planet in planets:
                                     if start_planet.player_here:
@@ -437,7 +437,7 @@ tile_images = {
 }
 
 # TODO find picture for player on planet
-player_image = load_image('player_on_planet.png', -1)
+player_image = load_image('player_on_planet.png', [-1])
 
 tile_width = tile_height = 40
 
@@ -457,7 +457,7 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(tiles_group, all_sprites)
         if tile_type == 's':
             # TODO show to player that ship is here(design)
-            self.image = load_image('hero.png', -1, (3 * tile_width, 3 * tile_height))
+            self.image = load_image('hero.png', [-1], (3 * tile_width, 3 * tile_height))
             self.rect = self.image.get_rect()
             self.rect.bottom = tile_height * pos_y + tile_height
             self.rect.centerx = tile_width * pos_x + tile_width // 2
@@ -795,7 +795,8 @@ def flight_game(level_max):
             level = 0
             coeff += 0.5
         if coeff >= FPS / 25:
-            coeff = -1
+            for sprite in all_sprites:
+                sprite.kill()
             return True
 
         i = 0
