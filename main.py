@@ -459,8 +459,11 @@ def blit_text(screen):
     font = pygame.font.Font(None, 25)
     text_top = 0
     res = []
-    for message in text_to_blit:
-        res.extend(message)
+    for message_ind in range(len(text_to_blit)):
+        res.append('')
+        if message_ind == len(text_to_blit) - 1:
+            res.append('    New message:')
+        res.extend(text_to_blit[message_ind])
     message = default_message.copy()
     message.extend(res)
     for line in message:
@@ -472,7 +475,7 @@ def blit_text(screen):
 
         rect = pygame.Surface([text_w, text_h])
         rect.fill((0, 0, 0))
-        rect.set_alpha(90)
+        rect.set_alpha(99)
         screen.blit(rect, (text_x, text_y))
 
         screen.blit(text, (text_x, text_y))
@@ -505,7 +508,7 @@ def find_tile(player):
 
 def show_action(player, num):
     tile = find_tile(player)
-    if tile.type == 'exit':
+    if tile.type == 'l':
         send_message('If you want to exit the planet, press Enter')
         return None, None
     elif tile.type[0] == '<':
