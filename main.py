@@ -242,27 +242,51 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
 goods = {
     0: 'GOLD',
     1: 'FUEL',
-    2: 'WATER'
+    2: 'WATER',
+    3: 'IRON',
+    4: 'PLUTONIUM',
+    5: 'OIL',
+    6: 'PETROLEUM',
+    7: 'ARTJOMEUM',
+    8: 'FOOD'
 }
 
 # TODO add pictures of goods when player is buying them
 pictures_of_goods = {
     'GOLD': load_image('gold.png'),
     'FUEL': load_image('fuel.png'),
-    'WATER': load_image('water.png')
+    'IRON': load_image('iron.png'),
+    'PLUTONIUM': load_image('plutonium.png'),
+    'OIL': load_image('oil.png'),
+    'PETROLEUM': load_image('petroleum.png'),
+    'ARTJOMEUM': load_image('artjomeum.png'),
+    'WATER': load_image('water.png'),
+    'FOOD': load_image('food.png')
 }
 
 # TODO set adecvatic cost and count for goods on each planet
 info_about_goods_to_buy = {
     'GOLD': {i: [1, 20] for i in range(len(PLANETS))},
     'FUEL': {i: [1, 1] for i in range(len(PLANETS))},
-    'WATER': {i: [3, 10] for i in range(len(PLANETS))}
+    'IRON': {i: [3, 10] for i in range(len(PLANETS))},
+    'PLUTONIUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'OIL': {i: [3, 10] for i in range(len(PLANETS))},
+    'PETROLEUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'ARTJOMEUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'WATER': {i: [3, 10] for i in range(len(PLANETS))},
+    'FOOD': {i: [3, 10] for i in range(len(PLANETS))}
 }
 
 info_about_goods_to_sell = {
     'GOLD': {i: [1, 30] for i in range(len(PLANETS))},
     'FUEL': {i: [1, 3] for i in range(len(PLANETS))},
-    'WATER': {i: [3, 30] for i in range(len(PLANETS))}
+    'IRON': {i: [3, 30] for i in range(len(PLANETS))},
+    'PLUTONIUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'OIL': {i: [3, 30] for i in range(len(PLANETS))},
+    'PETROLEUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'ARTJOMEUM': {i: [1, 1] for i in range(len(PLANETS))},
+    'WATER': {i: [3, 30] for i in range(len(PLANETS))},
+    'FOOD': {i: [3, 30] for i in range(len(PLANETS))}
 }
 
 # TODO find picture of a table where player puts goods if he wants to sell them
@@ -764,7 +788,6 @@ def flight_game(level_max):
     sec = 0
     coeff = 0.5
     level = 0
-    ended = 0
 
     while True:
         for event in pygame.event.get():
