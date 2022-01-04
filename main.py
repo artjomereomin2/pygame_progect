@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import datetime
 from random import randint
 import pygame
 
@@ -141,10 +142,10 @@ def optimize(a, b):
 
 def generate_merchant(planet_type):
     res = []
-    for _ in range(randint(2, 5)):
+    for _ in range(randint(2, 4)):
         x, y = random.choice(goods), random.choice(goods)
         if x != y:
-            res.append((x, y, *optimize(COSTS[planet_type][y] + randint(0, 2), COSTS[planet_type][x] + randint(0, 2))))
+            res.append((x, y, *optimize(COSTS[planet_type][y] + randint(0, 2), COSTS[planet_type][x] + randint(0, 10))))
     return res
 
 
@@ -458,7 +459,7 @@ def map_selection():
 player_x, player_y = None, None
 
 
-def generate_level(level):
+def generate_level(level, level_type):
     global player_x, player_y
     new_player, x, y = None, None, None
     for y in range(len(level)):
@@ -480,6 +481,10 @@ def generate_level(level):
                 Tile('l', x, y)
             elif level[y][x][0] == '=':
                 Tile(level[y][x], x, y)
+                if MERCHANTS[int(level[y][x][1:])]['last_trade'] is not None and datetime.datetime.now() - \
+                        MERCHANTS[int(level[y][x][1:])]['last_trade'] > datetime.timedelta(minutes=10):
+                    MERCHANTS[int(level[y][x][1:])]['change'] = generate_merchant(level_type)
+                MERCHANTS[int(level[y][x][1:])]['last_trade'] = datetime.datetime.now()
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1
 
@@ -531,10 +536,17 @@ class Tile(pygame.sprite.Sprite):
 
 have = {x: 0 for x in goods}
 
+can_move = 200000
+
+weight = {'FOOD': 1, 'WATER': 1, 'FUEL': 1, 'OIL': 1.5, 'GOLD': 10, 'PLUTONIUM': 5000, 'IRON': 3, 'PETROLEUM': 10000,
+          'ARTJOMEUM': 10000}
+
 have['FUEL'] = 1000
 
 have['GOLD'] = 100
 
+def calc_weight():
+    return sum([weight[x]*have[x] for x in goods])
 
 class PlayerOnPlanet(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
@@ -553,23 +565,13 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             self.rect.x -= x
             self.rect.y -= y
 
-    def buy(self, name, cost, count):
-        global have
-        name = goods[int(name)]
-        if cost <= have['FUEL']:
-            have['FUEL'] -= cost
-            have[name] += count
+    def change(self, offer):
+        print(offer)
+        if have[offer[1]] >= offer[3] and calc_weight()+offer[2]*weight[offer[0]]<=can_move:
+            have[offer[1]] -= offer[3]
+            have[offer[0]] += offer[2]
         else:
-            send_message(f'You have not enough FUEL to buy {count} {name} for {cost} FUEL')
-
-    def sell(self, name, cost, count):
-        global have
-        name = goods[int(name)]
-        if count <= have[name]:
-            have[name] -= count
-            have['FUEL'] += cost
-        else:
-            send_message(f'You have not enough {name} to sell {count} {name} for {cost} FUEL')
+            send_message("You can't buy it.")
 
 
 class Camera:
@@ -625,7 +627,7 @@ def blit_text(screen):
         text_top += 20
 
 
-def line_text(text,line_size=20):
+def line_text(text, line_size=20):
     lines = ['']
     i = 0
     for word in text.split():
@@ -693,27 +695,60 @@ def show_parameters(screen):
     'ARTJOMEUM': load_image('artjomeum.png')
 }'''
 
-pictures_of_goods = {x: load_image('gold.png') for x in goods}
+pictures_of_goods = {x: pygame.transform.scale(load_image('gold.png'), (65, 65)) for x in goods}
 
 
-def draw_text(x, y, text, color, screen, font, line_size=20):
-    font = pygame.font.Font(None, font)
+def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
+    Font = pygame.font.Font(None, font)
+    message_top = y
     text_top = y
     text_x = x
-    for line in line_text(text,line_size):
-        text = font.render(line, True, color)
+    mxw = 0
+    to_blit = []
+    for line in line_text(text, line_size):
+        text = Font.render(line, True, color)
         text_y = text_top
         text_w = text.get_width()
         text_h = text.get_height()
-        screen.blit(text, (text_x, text_y))
-        text_top += 20
+        # screen.blit(text, (text_x, text_y))
+        to_blit.append((text, text_x, text_y))
+        text_top += font // 2 + 8
+    message_bottom = text_top + font // 4 - 10
+    message_left = x
+    message_right = Font.render('a' * line_size, True, color).get_width() + x
+    if fon_color is not None:
+        pygame.draw.rect(screen, fon_color,
+                         ((message_left, message_top), (message_right - message_left, message_bottom - message_top)))
+    for d in to_blit:
+        screen.blit(d[0], (d[1], d[2]))
+    return message_bottom + 5, Font.render('a' * line_size, True, color).get_width()
 
 
-def trade_game(screen, merchant):
+def trade_game(screen, merchant, player):
+    print()
     print(merchant)
     # TODO show inventory
     window_w = 400
     window_h = 600
+
+    buttons = []
+
+    k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
+                     f"Hello, I'm {merchant['name']}. I'm from {merchant['home planet']}.",
+                     (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+    k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "Offers:",
+                     (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+    for offer in merchant['change']:
+        screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
+        screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+        button = [(WIDTH - window_w) // 2 + 90, k]
+        k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                         f"You give me {offer[3]} {offer[1]}, I give you {offer[2]} {offer[0]}",
+                         (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+        button.append(w)
+        button.append(k - button[1])
+        buttons.append(button)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -721,9 +756,15 @@ def trade_game(screen, merchant):
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # TODO colide and buy and delete
+                for i in range(len(buttons)):
+                    if pygame.Rect((buttons[i][0], buttons[i][1]), (buttons[i][2], buttons[i][3])).collidepoint(
+                            event.pos):
+                        print(i)
+                        player.change(merchant['change'][i])
 
-        for offer in merchant['change']:
-            ...
+        screen.fill((0, 0, 0))
 
         all_sprites.update()
         all_sprites.draw(screen)
@@ -739,6 +780,18 @@ def trade_game(screen, merchant):
         screen.blit(shadow, (0, 0))
 
         pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2, 0), (window_w, window_h)))
+
+        k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
+                         f"Hello, I'm {merchant['name']}. I'm from {merchant['home planet']}.",
+                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+        k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "Offers:",
+                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+        for offer in merchant['change']:
+            screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
+            screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+            k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                             f"You give me {offer[3]} {offer[1]}, I give you {offer[2]} {offer[0]}",
+                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -750,7 +803,7 @@ def planet_game(num):
     text_to_blit = []
     particles = []
     global level_x, level_y
-    player, level_x, level_y = generate_level(planet)
+    player, level_x, level_y = generate_level(planet, PLANET_TYPE[num])
     camera = Camera()
     while True:
         for event in pygame.event.get():
@@ -778,7 +831,7 @@ def planet_game(num):
                         return
                     elif tile.type[0] == '=':
                         print(tile.type)
-                        trade_game(screen, MERCHANTS[int(tile.type[1:])])
+                        trade_game(screen, MERCHANTS[int(tile.type[1:])], player)
         # изменяем ракурс камеры
         camera.update(player)
         # обновляем положение всех спрайтов
