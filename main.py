@@ -202,6 +202,8 @@ def planet_generator(n, w, h):
 
     middle_shop2_up = middle_shop2_down[::-1]
 
+    #TODO ask if anyone understand what is happening over here
+
     big_shop_down = arr_from_str(
         '# # # # # # # # #\n'
         '# $ # . . . # $ #\n'
@@ -545,8 +547,10 @@ have['FUEL'] = 1000
 
 have['GOLD'] = 100
 
+
 def calc_weight():
-    return sum([weight[x]*have[x] for x in goods])
+    return sum([weight[x] * have[x] for x in goods])
+
 
 class PlayerOnPlanet(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
@@ -567,7 +571,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
 
     def change(self, offer):
         print(offer)
-        if have[offer[1]] >= offer[3] and calc_weight()+offer[2]*weight[offer[0]]<=can_move:
+        if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] <= can_move:
             have[offer[1]] -= offer[3]
             have[offer[0]] += offer[2]
         else:
@@ -763,6 +767,10 @@ def trade_game(screen, merchant, player):
                             event.pos):
                         print(i)
                         player.change(merchant['change'][i])
+                        if randint(0, 5) == 0:
+                            buttons.pop(-1)
+                            merchant['change'].pop(i)
+                        break
 
         screen.fill((0, 0, 0))
 
