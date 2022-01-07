@@ -15,6 +15,7 @@ player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 garbage_group = pygame.sprite.Group()
+is_not_break = None
 
 iss = True
 
@@ -162,7 +163,7 @@ def planet_generator(n, w, h):
         )
     ]
 
-    terrain = [small_shop_up, small_shop_down, middle_shop1_down, middle_shop2_down, middle_shop1_up, middle_shop1_down,
+    terrain = [small_shop_up, small_shop_down, middle_shop1_down, middle_shop2_down, middle_shop1_up, middle_shop2_up,
                big_shop_down, big_shop_up] + obstacles
 
     for _ in range(n):
@@ -313,7 +314,7 @@ class Garbage(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.x -= 3 + int(self.gravitate)
-        self.rect.y += +randint(-5, 5)
+        self.rect.y += +randint(-4, 4)
         if not self.rect.colliderect(screen_rect):
             self.kill()
         self.gravitate += G
@@ -372,7 +373,7 @@ planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in
 
 class PlanetView(pygame.sprite.Sprite):
     def __init__(self, pos, num, player_here=False, **other):
-        super(PlanetView, self).__init__(planets)
+        super().__init__(planets)
         self.image = pygame.transform.scale(planet_images[num], (100, 100))
         self.rect = self.image.get_rect()
         self.num = num
@@ -393,7 +394,18 @@ def map_selection():
         if i == 0:
             PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=True)
         else:
-            PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
+            while True:
+                self = PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
+                for sprite in planets:
+                    if pygame.sprite.collide_rect(self, sprite) and not self.rect.colliderect(screen_rect):
+                        is_kill = True
+                        break
+                else:
+                    is_kill = False
+                if is_kill:
+                    self.kill()
+                else:
+                    break
 
     while True:
         for event in pygame.event.get():
@@ -406,12 +418,14 @@ def map_selection():
                             planet_game(planet.num)
                         else:
                             res = flight_game(20)
-                            if res == True:  # flight is successful
-                                for start_planet in planets:
-                                    if start_planet.player_here:
-                                        start_planet.player_here = False
-                                        break
+                            for start_planet in planets:
+                                if start_planet.player_here:
+                                    start_planet.player_here = False
+                                    break
+                            if res:
                                 planet.player_here = True
+                            else:
+                                random.choice(list(planets)).player_here = True
                             break
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
@@ -443,6 +457,7 @@ def generate_level(level):
                 player_x = x
                 player_y = y
             elif level[y][x] == '$':
+                Tile('.', x, y)
                 Tile('$', x, y)
             elif level[y][x] == 's':
                 Tile('s', x, y)
@@ -469,7 +484,7 @@ tiles_group = pygame.sprite.Group()
 player_on_planet_group = pygame.sprite.Group()
 
 exit_image = load_image('exit.png', size=(tile_width, tile_height))
-merchants = [load_image('merchant.png')]  # TODO make many pictures of merchants
+merchants = [load_image('merchant.png', [-1])]  # TODO make many pictures of merchants
 
 
 # TODO tile.save and empty tiles transforming into < or >
@@ -490,7 +505,7 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type == '$':
-            self.image = merchants[randint(0, len(merchants) - 1)]
+            self.image = pygame.transform.scale(merchants[randint(0, len(merchants) - 1)], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] not in '<>':
@@ -537,7 +552,7 @@ class Tile(pygame.sprite.Sprite):
             PLANETS[num][self.pos_y][self.pos_x] = self.type
 
 
-have = {'FUEL': 1000, 'GOLD': 0, 'WATER': 0}
+have = {'FUEL': 1000}
 
 
 class PlayerOnPlanet(pygame.sprite.Sprite):
@@ -806,7 +821,7 @@ def flight_game(level_max):
         screen.fill((0, 0, 0))
 
         # Астероиды
-        if iss:
+        if iss and coeff != -1:
             sec += 1
         if sec == int(FPS / coeff):
             sec = 0
@@ -818,6 +833,8 @@ def flight_game(level_max):
             level = 0
             coeff += 0.5
         if coeff >= FPS / 25:
+            coeff = -1
+        if len(garbage_group) == 0 and coeff == -1:
             for sprite in all_sprites:
                 sprite.kill()
             return True
@@ -853,7 +870,14 @@ def flight_game(level_max):
                          (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
 
         if iss:
-            all_sprites.update()
+            stars_sprites.update()
+            player_group.update()
+            particles_sprites.update()
+            garbage_group.update()
+            if not is_not_break:
+                for i in all_sprites:
+                    i.kill()
+                return False
         stars_sprites.draw(screen)
         player_group.draw(screen)
         particles_sprites.draw(screen)
@@ -963,14 +987,12 @@ class FlyingPlayer(AnimatedSprite):
             self.speedy -= self.acceleration - value
 
     def update(self):
-        global coeff
+        global is_not_break
         if self.rect.top <= -20:
             self.speedy = 1
         self.time += 1
-        if self.rect.bottom >= HEIGHT + 20:
-            for i in all_sprites:
-                i.kill()
-            coeff = 0.5
+        if self.rect.bottom >= HEIGHT + 100:
+            is_not_break = False
             return
         i = 0
         while i < len(self.slow):
@@ -985,12 +1007,13 @@ class FlyingPlayer(AnimatedSprite):
         other_image.blit(super().update(), (160, 30))
         self.image = other_image
         self.mask = pygame.mask.from_surface(self.image)
+        is_not_break = True
 
     def de_baf(self, time=10 ** 3, value=1):
         self.slow.append([time, value])
 
 
-screen_rect = (0, 0, WIDTH, HEIGHT)
+screen_rect = (-50, 0, WIDTH + 50, HEIGHT)
 
 
 class Particle(pygame.sprite.Sprite):
