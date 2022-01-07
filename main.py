@@ -735,6 +735,8 @@ def planet_game(num):
                     _tile.save(num)
                 terminate()
             elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_i:
+                    pass
                 if event.key == pygame.K_RIGHT:
                     player.move(tile_width, 0)
                     cost, count = show_action(player, num)
