@@ -10,6 +10,8 @@ FPS = 50
 # основной персонаж
 player = None
 
+tile_width = tile_height = 40
+
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
@@ -77,9 +79,27 @@ running = True
 # . . . . . . . #
 '''
 
-goods = ['GOLD', 'FUEL', 'WATER', 'FOOD', 'IRON', 'PLUTONIUM', 'OIL', 'PETROLEUM', 'ARTJOMEUM']
+ship_level = 0
 
-merchants_images = [load_image('merchant.png')]  # TODO make many pictures of merchants
+upgrades = [
+    {'грузоподъёмность': 100000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 200000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 300000, 'КПД двигателя': 0.5, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 400000, 'КПД двигателя': 0.5, 'защита': 2, 'скорость': 1},
+    {'грузоподъёмность': 500000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
+    {'грузоподъёмность': 600000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
+    {'грузоподъёмность': 700000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
+    {'грузоподъёмность': 800000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
+    {'грузоподъёмность': 900000, 'КПД двигателя': 1.5, 'защита': 3, 'скорость': 3},
+    {'грузоподъёмность': 1000000, 'КПД двигателя': 1.5, 'защита': 4, 'скорость': 4},
+]
+
+goods = ['GOLD', 'FUEL', 'WATER', 'FOOD', 'IRON', 'PLUTONIUM', 'OIL', 'PETROLEUM', 'ARTJOMEUM']
+goods_translated = ['золото', 'топливо', 'вода', 'еда', 'железо', 'плутоний', 'нефть', 'петролеум', 'артёмиум']
+
+merchants_images = [load_image('merchant.png', size=(tile_width, tile_height))]  # TODO make many pictures of merchants
+
+mystery_merchants_images = [load_image('merchant.png', size=(tile_width, tile_height), rotate=90)]
 
 
 def arr_from_str(s):
@@ -87,8 +107,8 @@ def arr_from_str(s):
 
 
 def generate_name(k):
-    letters1 = list('eyuioa')
-    letters2 = list('qwrtpsjdfghklzxcvbnm')
+    letters1 = list('еэуиоа')
+    letters2 = list('квртйсждфхлзцбнм')
     name = random.choice(letters1 + letters2)
     while len(name) < k:
         if name[-1] in letters1:
@@ -157,12 +177,11 @@ def planet_generator(n, w, h):
     PLANET_TYPE = []
     MERCHANTS = []
     for i in range(n):
-        name = generate_name(randint(5, 10))
-        name += str(randint(100, 999))
+        name = generate_name(randint(3, 5))
+        name += str(randint(10, 99))
         PLANET_NAMES.append(name.upper())
         PLANET_TYPE.append(['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'ICE'][randint(0, 4)])
 
-    print(PLANET_NAMES)
     staring_zone = arr_from_str(
         '# # # # # # # # #\n'
         '# . . . . . . . #\n'
@@ -202,7 +221,7 @@ def planet_generator(n, w, h):
 
     middle_shop2_up = middle_shop2_down[::-1]
 
-    #TODO ask if anyone understand what is happening over here
+    # TODO ask if anyone understand what is happening over here
 
     big_shop_down = arr_from_str(
         '# # # # # # # # #\n'
@@ -217,6 +236,13 @@ def planet_generator(n, w, h):
     )
 
     big_shop_up = big_shop_down[::-1]
+
+    mystery_shop = arr_from_str(
+        '# # #\n'
+        '# ? #\n'
+        '# # #\n'
+        '# u #'
+    )
 
     obstacles = [
         arr_from_str(
@@ -253,7 +279,7 @@ def planet_generator(n, w, h):
     ]
 
     terrain = [small_shop_up, small_shop_down, middle_shop1_down, middle_shop2_down, middle_shop1_up, middle_shop2_up,
-               big_shop_down, big_shop_up] + obstacles
+               big_shop_down, big_shop_up, mystery_shop] + obstacles
 
     for _ in range(n):
         field = [['' for i in range(w)] for j in range(h)]
@@ -280,21 +306,45 @@ def planet_generator(n, w, h):
                     for j1 in range(j, j + len(obj[0])):
                         field[i1 % h][j1 % w] = obj[i1 - i][j1 - j]
                         if field[i1 % h][j1 % w] == '=':
-                            print(PLANET_TYPE[_])
                             merchant = {'name': generate_name(randint(3, 5)).capitalize(),
                                         'home planet': random.choice(PLANET_NAMES),
                                         'image': random.choice(merchants_images),
                                         'change': generate_merchant(PLANET_TYPE[_]),
                                         'last_trade': None}
-                            print(merchant)
                             MERCHANTS.append(merchant)
                             field[i1 % h][j1 % w] = f'={len(MERCHANTS) - 1}'
+                        elif field[i1 % h][j1 % w] == 'u':
+                            merchant = {'name': generate_name(randint(2, 2)).capitalize(),
+                                        'home planet': random.choice(PLANET_NAMES),
+                                        'image': random.choice(mystery_merchants_images),
+                                        'change': 'UPGRADE',
+                                        'last_trade': None}
+                            MERCHANTS.append(merchant)
+                            field[i1 % h][j1 % w] = f'u{len(MERCHANTS) - 1}'
 
         for i in range(len(field)):
             for j in range(len(field[i])):
                 if field[i][j] == '':
                     field[i][j] = '.'
+                if field[i][j][0] == '=':
+                    for i2 in range(i - 2, i + 3):
+                        for j2 in range(j - 2, j + 3):
+                            print(field[i2 % h][j2 % w], end=' ')
+                            if abs(i2 - i) + abs(j2 - j) <= 2:
+                                if field[i2 % h][j2 % w] == '$':
+                                    field[i2 % h][j2 % w] = f'${field[i][j][1:]}'
+                        print()
+                    print()
+                if field[i][j][0] == 'u':
+                    for i2 in range(i - 2, i + 3):
+                        for j2 in range(j - 2, j + 3):
+                            if abs(i2 - i) + abs(j2 - j) <= 2:
+                                if field[i2 % h][j2 % w] == '?':
+                                    field[i2 % h][j2 % w] = f'?{field[i][j][1:]}'
         PLANETS.append(field)
+        for row in field:
+            print(row)
+        print()
 
 
 planet_generator(7, 50, 50)
@@ -403,6 +453,10 @@ planets = pygame.sprite.Group()
 planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
 
 
+def calculate_distance(x1, y1, x2, y2):
+    return 10
+
+
 class PlanetView(pygame.sprite.Sprite):
     def __init__(self, pos, num, player_here=False, **other):
         super(PlanetView, self).__init__(planets)
@@ -438,6 +492,17 @@ def map_selection():
                         if planet.player_here:
                             planet_game(planet.num)
                         else:
+                            # TODO check if player is sure
+
+                            now_planet = None
+                            for now_planet in planets:
+                                if now_planet.player_here:
+                                    break
+                            wasted_fuel = calculate_distance(now_planet.rect.centerx, now_planet.rect.centery,
+                                                             planet.rect.centerx,
+                                                             int(planet.rect.centery) / upgrades[ship_level][
+                                                                 'КПД двигателя'])
+
                             res = flight_game(20)
                             if res == True:  # flight is successful
                                 for start_planet in planets:
@@ -445,6 +510,7 @@ def map_selection():
                                         start_planet.player_here = False
                                         break
                                 planet.player_here = True
+                                have['FUEL'] -= wasted_fuel
                             break
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
@@ -475,8 +541,10 @@ def generate_level(level, level_type):
                 new_player = PlayerOnPlanet(x, y)
                 player_x = x
                 player_y = y
-            elif level[y][x] == '$':
-                Tile('$', x, y)
+            elif level[y][x][0] == '$':
+                Tile(level[y][x], x, y)
+            elif level[y][x][0] == '?':
+                Tile(level[y][x], x, y)
             elif level[y][x] == 's':
                 Tile('s', x, y)
             elif level[y][x] == 'l':
@@ -487,6 +555,9 @@ def generate_level(level, level_type):
                         MERCHANTS[int(level[y][x][1:])]['last_trade'] > datetime.timedelta(minutes=10):
                     MERCHANTS[int(level[y][x][1:])]['change'] = generate_merchant(level_type)
                 MERCHANTS[int(level[y][x][1:])]['last_trade'] = datetime.datetime.now()
+            elif level[y][x][0] == 'u':
+                Tile(level[y][x], x, y)
+
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1
 
@@ -498,8 +569,6 @@ tile_images = {
 
 # TODO find picture for player on planet
 player_image = load_image('player_on_planet.png', [-1])
-
-tile_width = tile_height = 40
 
 tiles_group = pygame.sprite.Group()
 player_on_planet_group = pygame.sprite.Group()
@@ -522,23 +591,29 @@ class Tile(pygame.sprite.Sprite):
             self.image = exit_image
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
-        elif tile_type == '$':
-            self.image = merchants_images[randint(0, len(merchants_images) - 1)]
+        elif tile_type[0] == '$':
+            self.image = MERCHANTS[int(tile_type[1:])]['image']
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
-        elif tile_type[0] != '=':
-            self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
+        elif tile_type[0] == '?':
+            self.image = MERCHANTS[int(tile_type[1:])]['image']
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
-        else:
+        elif tile_type[0] == 'u':
             self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] == '=':
+            self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] in tile_images.keys():
+            self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
 
 
 have = {x: 0 for x in goods}
-
-can_move = 200000
 
 weight = {'FOOD': 1, 'WATER': 1, 'FUEL': 1, 'OIL': 1.5, 'GOLD': 10, 'PLUTONIUM': 5000, 'IRON': 3, 'PETROLEUM': 10000,
           'ARTJOMEUM': 10000}
@@ -570,12 +645,25 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             self.rect.y -= y
 
     def change(self, offer):
+        global ship_level
         print(offer)
-        if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] <= can_move:
-            have[offer[1]] -= offer[3]
-            have[offer[0]] += offer[2]
+        if type(offer) == tuple:
+            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[
+                offer[1]] <= upgrades[ship_level]['can_move']:
+                have[offer[1]] -= offer[3]
+                have[offer[0]] += offer[2]
+            else:
+                if not have[offer[1]] >= offer[3]:
+                    send_message("В долг не даю.")
+                else:
+                    send_message('А как ты это понесёшь?')
         else:
-            send_message("You can't buy it.")
+            if have[offer] >= ship_level + 1:
+                have[offer] -= ship_level + 1
+                ship_level += 1
+            else:
+                send_message('В долг не даю.')
+        ship_level = min(ship_level, 9)
 
 
 class Camera:
@@ -611,7 +699,7 @@ def blit_text(screen):
     for message_ind in range(len(text_to_blit)):
         res.append('')
         if message_ind == len(text_to_blit) - 1:
-            res.append('    New message:')
+            res.append('    Новое сообщение:')
         res.extend(text_to_blit[message_ind])
     message = default_message.copy()
     message.extend(res)
@@ -636,7 +724,10 @@ def line_text(text, line_size=20):
     i = 0
     for word in text.split():
         if len(lines[i]) + len(word) + 1 < line_size:
-            lines[i] += ' ' + word
+            if lines[i] != '':
+                lines[i] += ' ' + word
+            else:
+                lines[i] += word
         else:
             lines.append(word)
             i += 1
@@ -658,9 +749,11 @@ def find_tile(player):
 def show_action(player):
     tile = find_tile(player)
     if tile.type == 'l':
-        send_message('If you want to exit the planet, press Enter')
+        send_message('Улететь хочешь, Enter жми.')
     elif tile.type[0] == '=':
-        send_message('If tou want to trade, press Enter')
+        send_message('Меняться будем, жми Enter.')
+    elif tile.type[0] == 'u':
+        send_message('Меняться будем, жми Enter.')
 
 
 def get_info_about_goods_to_buy(good, planet):
@@ -701,6 +794,9 @@ def show_parameters(screen):
 
 pictures_of_goods = {x: pygame.transform.scale(load_image('gold.png'), (65, 65)) for x in goods}
 
+# TODO picture of upgrade
+upgrade_image = load_image('upgrade.png', size=(65, 65))
+
 
 def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
     Font = pygame.font.Font(None, font)
@@ -729,6 +825,7 @@ def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
 
 
 def trade_game(screen, merchant, player):
+    print(have)
     print()
     print(merchant)
     # TODO show inventory
@@ -736,22 +833,33 @@ def trade_game(screen, merchant, player):
     window_h = 600
 
     buttons = []
-
     k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
-                     f"Hello, I'm {merchant['name']}. I'm from {merchant['home planet']}.",
+                     f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
-    k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "Offers:",
+    k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
-    for offer in merchant['change']:
-        screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
-        screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
-        button = [(WIDTH - window_w) // 2 + 90, k]
-        k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                         f"You give me {offer[3]} {offer[1]}, I give you {offer[2]} {offer[0]}",
-                         (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
-        button.append(w)
-        button.append(k - button[1])
-        buttons.append(button)
+    if merchant['change'] != 'UPGRADE':
+        for offer in merchant['change']:
+            screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
+            screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+            button = [(WIDTH - window_w) // 2 + 90, k]
+            k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                             f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+            button.append(w)
+            button.append(k - button[1])
+            buttons.append(button)
+    else:
+        for x in ['PETROLEUM', 'ARTJOMEUM']:
+            screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10, k))
+            screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
+            button = [(WIDTH - window_w) // 2 + 90, k]
+            k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                             f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+            button.append(w)
+            button.append(k - button[1])
+            buttons.append(button)
 
     while True:
         for event in pygame.event.get():
@@ -761,12 +869,14 @@ def trade_game(screen, merchant, player):
                 if event.key == pygame.K_ESCAPE:
                     return
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # TODO colide and buy and delete
                 for i in range(len(buttons)):
                     if pygame.Rect((buttons[i][0], buttons[i][1]), (buttons[i][2], buttons[i][3])).collidepoint(
                             event.pos):
                         print(i)
-                        player.change(merchant['change'][i])
+                        if merchant['change'] != 'UPGRADE':
+                            player.change(merchant['change'][i])
+                        else:
+                            player.change(['PETROLEUM', 'ARTJOMEUM'][i])
                         if randint(0, 5) == 0:
                             buttons.pop(-1)
                             merchant['change'].pop(i)
@@ -790,16 +900,25 @@ def trade_game(screen, merchant, player):
         pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2, 0), (window_w, window_h)))
 
         k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
-                         f"Hello, I'm {merchant['name']}. I'm from {merchant['home planet']}.",
+                         f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
                          (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
-        k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "Offers:",
+        k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
                          (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
-        for offer in merchant['change']:
-            screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
-            screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
-            k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                             f"You give me {offer[3]} {offer[1]}, I give you {offer[2]} {offer[0]}",
-                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+        if merchant['change'] != 'UPGRADE':
+            for offer in merchant['change']:
+                screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
+                screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+                k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                                 f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                                 (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+        else:
+            for x in ['PETROLEUM', 'ARTJOMEUM']:
+                screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10, k))
+                screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
+                button = [(WIDTH - window_w) // 2 + 90, k]
+                k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                                 f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                                 (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -807,7 +926,7 @@ def trade_game(screen, merchant, player):
 def planet_game(num):
     global default_message, text_to_blit
     planet = PLANETS[num]
-    default_message = line_text(f'Now you are on the planet {PLANET_NAMES[num]}')
+    default_message = line_text(f'Приветствуем вас на планете {PLANET_NAMES[num]}')
     text_to_blit = []
     particles = []
     global level_x, level_y
@@ -838,7 +957,8 @@ def planet_game(num):
                             sp.kill()
                         return
                     elif tile.type[0] == '=':
-                        print(tile.type)
+                        trade_game(screen, MERCHANTS[int(tile.type[1:])], player)
+                    elif tile.type[0] == 'u':
                         trade_game(screen, MERCHANTS[int(tile.type[1:])], player)
         # изменяем ракурс камеры
         camera.update(player)
@@ -923,9 +1043,9 @@ def flight_game(level_max):
                                                  for x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=time,
                                                 follow_player=True, gravity=(-1, 0), count=40))
                 if m.big == False:
-                    player.de_baf(time)
+                    player.de_baf(time, 1 / upgrades[ship_level]['защита'])
                 else:
-                    player.de_baf(time, 2)
+                    player.de_baf(time, 2 / upgrades[ship_level]['защита'])
                 m.kill()
 
         # Кометы
