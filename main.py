@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # TODO писать, что товар закончился
+# TODO check if planet num changed
 
 import os
 import sys
