@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import random
@@ -18,6 +20,76 @@ player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
 garbage_group = pygame.sprite.Group()
+
+iss = True
+
+G = 9.8 / FPS
+
+pygame.init()
+
+SIZE = WIDTH, HEIGHT = (1200, 600)
+
+screen = pygame.display.set_mode(SIZE)
+
+clock = pygame.time.Clock()
+
+running = True
+
+upgrades = [
+    {'грузоподъёмность': 100000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 200000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 300000, 'КПД двигателя': 0.5, 'защита': 1, 'скорость': 1},
+    {'грузоподъёмность': 400000, 'КПД двигателя': 0.5, 'защита': 2, 'скорость': 1},
+    {'грузоподъёмность': 500000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
+    {'грузоподъёмность': 600000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
+    {'грузоподъёмность': 700000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
+    {'грузоподъёмность': 800000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
+    {'грузоподъёмность': 900000, 'КПД двигателя': 1.5, 'защита': 3, 'скорость': 3},
+    {'грузоподъёмность': 1000000, 'КПД двигателя': 1.5, 'защита': 3, 'скорость': 4},
+]
+
+goods = ['GOLD', 'FUEL', 'WATER', 'FOOD', 'IRON', 'PLUTONIUM', 'OIL', 'PETROLEUM', 'ARTJOMEUM']
+goods_translated = ['золото', 'топливо', 'вода', 'еда', 'железо', 'плутоний', 'нефть', 'петролеум', 'артёмиум']
+
+DEFAULT_GOODS_COSTS = {'FUEL': 1, 'GOLD': 3, 'WATER': 0.01, 'FOOD': 0.1, 'IRON': 0.5, 'PLUTONIUM': 2, 'OIL': 0.9,
+                       'PETROLEUM': 6, 'ARTJOMEUM': 6}
+expensive = {
+    'GREEN': ['GOLD', 'IRON', 'FUEL', 'OIL'],
+    'FIRE': ['FOOD', 'WATER'],
+    'DESERT': ['FOOD', 'WATER'],
+    'MOUNTAIN': ['FOOD', 'ARTJOMEUM', 'PETROLEUM'],
+    'ICE': ['FUEL', 'OIL']
+}
+cheap = {
+    'GREEN': ['WATER', 'FOOD'],
+    'FIRE': ['GOLD', 'PLUTONIUM', 'FUEL'],
+    'DESERT': ['FUEL', 'OIL', 'PETROLEUM'],
+    'MOUNTAIN': ['GOLD', 'IRON'],
+    'ICE': ['WATER', 'ARTJOMEUM']
+}
+COSTS = {}
+for planet_type in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'ICE']:
+    COSTS[planet_type] = DEFAULT_GOODS_COSTS.copy()
+    for x in expensive[planet_type]:
+        COSTS[planet_type][x] *= 2
+    for x in cheap[planet_type]:
+        COSTS[planet_type][x] /= 2
+    mn = min(COSTS[planet_type].values())
+    for k in COSTS[planet_type].keys():
+        COSTS[planet_type][k] = int(COSTS[planet_type][k] * 1 / mn)
+
+planets = pygame.sprite.Group()
+tiles_group = pygame.sprite.Group()
+player_on_planet_group = pygame.sprite.Group()
+
+weight = {'FOOD': 1, 'WATER': 1, 'FUEL': 1, 'OIL': 1.5, 'GOLD': 10, 'PLUTONIUM': 5000, 'IRON': 3, 'PETROLEUM': 10000,
+          'ARTJOMEUM': 10000}
+
+default_message = []
+
+text_to_blit = []
+
+screen_rect = (0, 0, WIDTH, HEIGHT)
 
 
 def load_image(name, colorkeylist=None, size=None, rotate=0):
@@ -46,19 +118,73 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
     return image
 
 
-iss = True
+merchants_images = [load_image('merchant.png', size=(tile_width, tile_height))]  # TODO make many pictures of merchants
 
-G = 9.8 / FPS
+mystery_merchants_images = [load_image('merchant.png', size=(tile_width, tile_height), rotate=90)]
 
-pygame.init()
+# TODO make cool planet images
+planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
 
-SIZE = WIDTH, HEIGHT = (1200, 600)
+player_x, player_y = None, None
 
-screen = pygame.display.set_mode(SIZE)
+tile_images = {
+    '#': load_image('box.png'),
+    '.': load_image('grass.png')
+}
 
-clock = pygame.time.Clock()
+# TODO find picture for player on planet
+player_image = load_image('player_on_planet.png', [-1])
 
-running = True
+exit_image = load_image('exit.png', size=(tile_width, tile_height))
+
+pictures_of_goods = {x: pygame.transform.scale(load_image('gold.png'), (65, 65)) for x in goods}
+
+# TODO picture of upgrade
+upgrade_image = load_image('upgrade.png', size=(65, 65))
+
+star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
+star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
+
+
+def new_game():
+    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
+    ship_level = 0
+    planet_generator(7, 50, 50)
+    now_planet = 0
+    have = {x: 0 for x in goods}
+
+    have['FUEL'] = 1000
+
+    have['GOLD'] = 100
+
+
+def save(name):
+    with open(name, mode='w') as f:
+        print(str(PLANETS))
+        print(str(PLANET_NAMES))
+        print(str(PLANET_TYPE))
+        print(str(MERCHANTS))
+        print(str(ship_level))
+        print(str(now_planet))
+        print(str(have))
+        f.write(f'global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have\n'
+                f'PLANETS = {str(PLANETS)}\n'
+                f'PLANET_NAMES = {str(PLANET_NAMES)}\n'
+                f'PLANET_TYPE = {str(PLANET_TYPE)}\n'
+                f'MERCHANTS = {str(MERCHANTS)}\n'
+                f'ship_level = {ship_level}\n'
+                f'now_planet = {now_planet}\n'
+                f'have = {str(have)}\n')
+
+
+def load(name):
+    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
+    print(1213)
+    with open(name, mode='r') as f:
+        global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
+        exec('\n'.join(f.readlines()))
+    print(PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have, sep='\n')
+
 
 # . is empty
 # # is wall
@@ -79,28 +205,6 @@ running = True
 # . . . . . . . #
 '''
 
-ship_level = 0
-
-upgrades = [
-    {'грузоподъёмность': 100000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
-    {'грузоподъёмность': 200000, 'КПД двигателя': 0.25, 'защита': 1, 'скорость': 1},
-    {'грузоподъёмность': 300000, 'КПД двигателя': 0.5, 'защита': 1, 'скорость': 1},
-    {'грузоподъёмность': 400000, 'КПД двигателя': 0.5, 'защита': 2, 'скорость': 1},
-    {'грузоподъёмность': 500000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
-    {'грузоподъёмность': 600000, 'КПД двигателя': 0.75, 'защита': 2, 'скорость': 2},
-    {'грузоподъёмность': 700000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
-    {'грузоподъёмность': 800000, 'КПД двигателя': 1, 'защита': 3, 'скорость': 2},
-    {'грузоподъёмность': 900000, 'КПД двигателя': 1.5, 'защита': 3, 'скорость': 3},
-    {'грузоподъёмность': 1000000, 'КПД двигателя': 1.5, 'защита': 3, 'скорость': 4},
-]
-
-goods = ['GOLD', 'FUEL', 'WATER', 'FOOD', 'IRON', 'PLUTONIUM', 'OIL', 'PETROLEUM', 'ARTJOMEUM']
-goods_translated = ['золото', 'топливо', 'вода', 'еда', 'железо', 'плутоний', 'нефть', 'петролеум', 'артёмиум']
-
-merchants_images = [load_image('merchant.png', size=(tile_width, tile_height))]  # TODO make many pictures of merchants
-
-mystery_merchants_images = [load_image('merchant.png', size=(tile_width, tile_height), rotate=90)]
-
 
 def arr_from_str(s):
     return [x.split(' ') for x in s.split('\n')]
@@ -119,34 +223,6 @@ def generate_name(k):
             elif len(name) != k - 1:
                 name += random.choice(letters1) + random.choice(letters1)
     return name
-
-
-DEFAULT_GOODS_COSTS = {'FUEL': 1, 'GOLD': 3, 'WATER': 0.01, 'FOOD': 0.1, 'IRON': 0.5, 'PLUTONIUM': 2, 'OIL': 0.9,
-                       'PETROLEUM': 6, 'ARTJOMEUM': 6}
-expensive = {
-    'GREEN': ['GOLD', 'IRON', 'FUEL', 'OIL'],
-    'FIRE': ['FOOD', 'WATER'],
-    'DESERT': ['FOOD', 'WATER'],
-    'MOUNTAIN': ['FOOD', 'ARTJOMEUM', 'PETROLEUM'],
-    'ICE': ['FUEL', 'OIL']
-}
-cheap = {
-    'GREEN': ['WATER', 'FOOD'],
-    'FIRE': ['GOLD', 'PLUTONIUM', 'FUEL'],
-    'DESERT': ['FUEL', 'OIL', 'PETROLEUM'],
-    'MOUNTAIN': ['GOLD', 'IRON'],
-    'ICE': ['WATER', 'ARTJOMEUM']
-}
-COSTS = {}
-for planet_type in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'ICE']:
-    COSTS[planet_type] = DEFAULT_GOODS_COSTS.copy()
-    for x in expensive[planet_type]:
-        COSTS[planet_type][x] *= 2
-    for x in cheap[planet_type]:
-        COSTS[planet_type][x] /= 2
-    mn = min(COSTS[planet_type].values())
-    for k in COSTS[planet_type].keys():
-        COSTS[planet_type][k] = int(COSTS[planet_type][k] * 1 / mn)
 
 
 def gcd(a, b):
@@ -308,7 +384,7 @@ def planet_generator(n, w, h):
                         if field[i1 % h][j1 % w] == '=':
                             merchant = {'name': generate_name(randint(3, 5)).capitalize(),
                                         'home planet': random.choice(PLANET_NAMES),
-                                        'image': random.choice(merchants_images),
+                                        'image_num': randint(0, len(merchants_images) - 1),
                                         'change': generate_merchant(PLANET_TYPE[_]),
                                         'last_trade': None}
                             MERCHANTS.append(merchant)
@@ -316,7 +392,7 @@ def planet_generator(n, w, h):
                         elif field[i1 % h][j1 % w] == 'u':
                             merchant = {'name': generate_name(randint(2, 2)).capitalize(),
                                         'home planet': random.choice(PLANET_NAMES),
-                                        'image': random.choice(mystery_merchants_images),
+                                        'image_num': randint(0, len(merchants_images) - 1),
                                         'change': 'UPGRADE',
                                         'last_trade': None}
                             MERCHANTS.append(merchant)
@@ -345,9 +421,6 @@ def planet_generator(n, w, h):
         for row in field:
             print(row)
         print()
-
-
-planet_generator(7, 50, 50)
 
 
 def load_image(name, colorkeylist=None, size=None, rotate=0):
@@ -442,32 +515,32 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return map_selection()
+                new_game()
+                return map_selection(now_planet)
         pygame.display.flip()
         clock.tick(FPS)
-
-
-planets = pygame.sprite.Group()
-
-# TODO make cool planet images
-planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
 
 
 def calculate_distance(x1, y1, x2, y2):
     return 10
 
 
+# TODO planet images
 class PlanetView(pygame.sprite.Sprite):
     def __init__(self, pos, num, player_here=False, **other):
         super(PlanetView, self).__init__(planets)
-        self.image = pygame.transform.scale(planet_images[num], (100, 100))
+        self.image = pygame.transform.scale(planet_images[0], (100, 100))
         self.rect = self.image.get_rect()
         self.num = num
         self.rect.x, self.rect.y = pos[0], pos[1]
         self.player_here = player_here
 
 
-def map_selection():
+# TODO save sometimes
+
+def map_selection(player_planet_num):
+    global player_planet
+    player_planet = player_planet_num
     # TODO find space.png for background
     fon = pygame.Surface([WIDTH, HEIGHT])
     fon.fill((0, 0, 0))
@@ -476,8 +549,8 @@ def map_selection():
 
     screen.blit(fon, (0, 0))
     # planets are spawning
-    for i in range(6):
-        if i == 0:
+    for i in range(len(PLANET_NAMES)):
+        if i == player_planet:
             PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=True)
         else:
             PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
@@ -489,8 +562,10 @@ def map_selection():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 for planet in planets:
                     if planet.rect.collidepoint(*event.pos):
+                        save('file.txt')
                         if planet.player_here:
                             planet_game(planet.num)
+                            save('file.txt')
                         else:
                             # TODO check if player is sure
 
@@ -503,7 +578,7 @@ def map_selection():
                                                              int(planet.rect.centery) / upgrades[ship_level][
                                                                  'КПД двигателя'])
 
-                            res = flight_game(20)
+                            res = flight_game(10)
                             if res == True:  # flight is successful
                                 for start_planet in planets:
                                     if start_planet.player_here:
@@ -511,7 +586,14 @@ def map_selection():
                                         break
                                 planet.player_here = True
                                 have['FUEL'] -= wasted_fuel
+                                player_planet = planet.num
+                            save('file.txt')
                             break
+            elif event.type == pygame.KEYDOWN:
+                print(123)
+                if event.key == pygame.K_l:
+                    print(56)
+                    load('file.txt')
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
@@ -522,9 +604,6 @@ def map_selection():
         show_parameters(screen)
         pygame.display.flip()
         clock.tick(FPS)
-
-
-player_x, player_y = None, None
 
 
 def generate_level(level, level_type):
@@ -562,20 +641,6 @@ def generate_level(level, level_type):
     return new_player, x + 1, y + 1
 
 
-tile_images = {
-    '#': load_image('box.png'),
-    '.': load_image('grass.png')
-}
-
-# TODO find picture for player on planet
-player_image = load_image('player_on_planet.png', [-1])
-
-tiles_group = pygame.sprite.Group()
-player_on_planet_group = pygame.sprite.Group()
-
-exit_image = load_image('exit.png', size=(tile_width, tile_height))
-
-
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         self.type = tile_type
@@ -592,11 +657,11 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '$':
-            self.image = MERCHANTS[int(tile_type[1:])]['image']
+            self.image = merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']]
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '?':
-            self.image = MERCHANTS[int(tile_type[1:])]['image']
+            self.image = mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']]
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == 'u':
@@ -611,16 +676,6 @@ class Tile(pygame.sprite.Sprite):
             self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
-
-
-have = {x: 0 for x in goods}
-
-weight = {'FOOD': 1, 'WATER': 1, 'FUEL': 1, 'OIL': 1.5, 'GOLD': 10, 'PLUTONIUM': 5000, 'IRON': 3, 'PETROLEUM': 10000,
-          'ARTJOMEUM': 10000}
-
-have['FUEL'] = 1000
-
-have['GOLD'] = 100
 
 
 def calc_weight():
@@ -649,7 +704,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
         print(offer)
         if type(offer) == tuple:
             if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[
-                offer[1]] <= upgrades[ship_level]['can_move']:
+                offer[1]] <= upgrades[ship_level]['грузоподъёмность']:
                 have[offer[1]] -= offer[3]
                 have[offer[0]] += offer[2]
             else:
@@ -683,11 +738,6 @@ class Camera:
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
-
-
-default_message = []
-
-text_to_blit = []
 
 
 def blit_text(screen):
@@ -791,11 +841,6 @@ def show_parameters(screen):
     'PETROLEUM': load_image('petroleum.png'),
     'ARTJOMEUM': load_image('artjomeum.png')
 }'''
-
-pictures_of_goods = {x: pygame.transform.scale(load_image('gold.png'), (65, 65)) for x in goods}
-
-# TODO picture of upgrade
-upgrade_image = load_image('upgrade.png', size=(65, 65))
 
 
 def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
@@ -915,7 +960,6 @@ def trade_game(screen, merchant, player):
             for x in ['PETROLEUM', 'ARTJOMEUM']:
                 screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10, k))
                 screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
-                button = [(WIDTH - window_w) // 2 + 90, k]
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                                  f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
                                  (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
@@ -978,10 +1022,6 @@ def planet_game(num):
         blit_text(screen)
         pygame.display.flip()
         clock.tick(FPS)
-
-
-star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
-star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
 
 
 def flight_game(level_max):
@@ -1192,9 +1232,6 @@ class FlyingPlayer(AnimatedSprite):
 
     def de_baf(self, time=10 ** 3, value=1):
         self.slow.append([time, value])
-
-
-screen_rect = (0, 0, WIDTH, HEIGHT)
 
 
 class Particle(pygame.sprite.Sprite):
