@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# TODO писать, что товар закончился
+
 import os
 import sys
 import random
