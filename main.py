@@ -123,9 +123,9 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
     return image
 
 
-merchants_images = [load_image('merchant.png', size=(tile_width, tile_height))]  # TODO make many pictures of merchants
+merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures of merchants
 
-mystery_merchants_images = [load_image('merchant.png', size=(tile_width, tile_height), rotate=90)]
+mystery_merchants_images = [load_image('merchant.png', [-1], rotate=90)]
 
 # TODO make cool planet images
 planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
@@ -142,7 +142,7 @@ player_image = load_image('player_on_planet.png', [-1])
 
 exit_image = load_image('exit.png', size=(tile_width, tile_height))
 
-pictures_of_goods = {x: pygame.transform.scale(load_image('gold.png'), (65, 65)) for x in goods}
+pictures_of_goods = {x: pygame.transform.scale(load_image(f'{x.lower()}.png'), (65, 65)) for x in goods}
 
 # TODO picture of upgrade
 upgrade_image = load_image('upgrade.png', size=(65, 65))
@@ -651,11 +651,11 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '$':
-            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width, tile_height))
-            self.rect = self.image.get_rect().move(
-                tile_width * pos_x, tile_height * pos_y)
+            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
+            self.rect = self.image.get_rect()
+            self.rect.center = (tile_width * (pos_x + 0.5), tile_height * (pos_y + 0.5))
         elif tile_type[0] == '?':
-            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width, tile_height))
+            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == 'u':
@@ -879,8 +879,8 @@ def trade_game(screen, merchant, player):
                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
     if merchant['change'] != 'UPGRADE':
         for offer in merchant['change']:
-            screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
-            screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+            screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10, k))
+            screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75, k))
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                              f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
@@ -945,8 +945,8 @@ def trade_game(screen, merchant, player):
                          (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
         if merchant['change'] != 'UPGRADE':
             for offer in merchant['change']:
-                screen.blit(pictures_of_goods[offer[0]], ((WIDTH - window_w) // 2 + 10, k))
-                screen.blit(pictures_of_goods[offer[1]], ((WIDTH + window_w) // 2 - 75, k))
+                screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10, k))
+                screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                                  f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
                                  (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
