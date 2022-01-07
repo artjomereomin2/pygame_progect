@@ -368,7 +368,7 @@ def start_screen():
 planets = pygame.sprite.Group()
 
 # TODO make cool planet images
-planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
+planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 210, 30)]
 
 
 class PlanetView(pygame.sprite.Sprite):
@@ -390,14 +390,14 @@ def map_selection():
 
     screen.blit(fon, (0, 0))
     # planets are spawning
-    for i in range(6):
+    for i in range(7):
         if i == 0:
             PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=True)
         else:
             while True:
                 self = PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
                 for sprite in planets:
-                    if pygame.sprite.collide_rect(self, sprite) and not self.rect.colliderect(screen_rect):
+                    if pygame.sprite.collide_rect(self, sprite) and not self.rect.colliderect(screen_rect_for_planets):
                         is_kill = True
                         break
                 else:
@@ -1013,6 +1013,7 @@ class FlyingPlayer(AnimatedSprite):
 
 
 screen_rect = (-50, 0, WIDTH + 50, HEIGHT)
+screen_rect_for_planets = (0, 0, WIDTH, HEIGHT)
 
 
 class Particle(pygame.sprite.Sprite):
