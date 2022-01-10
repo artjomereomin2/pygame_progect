@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # TODO писать, что товар закончился
-# TODO check if planet num changed
 
 import os
 import sys
@@ -56,7 +55,7 @@ goods = ['GOLD', 'FUEL', 'WATER', 'FOOD', 'IRON', 'PLUTONIUM', 'OIL', 'PETROLEUM
 goods_translated = ['золото', 'топливо', 'вода', 'еда', 'железо', 'плутоний', 'нефть', 'петролеум', 'артёмиум']
 
 DEFAULT_GOODS_COSTS = {'FUEL': 1, 'GOLD': 3, 'WATER': 0.01, 'FOOD': 0.1, 'IRON': 0.5, 'PLUTONIUM': 2, 'OIL': 0.9,
-                       'PETROLEUM': 6, 'ARTJOMEUM': 6}
+                       'PETROLEUM': 100, 'ARTJOMEUM': 100}
 expensive = {
     'GREEN': ['GOLD', 'IRON', 'FUEL', 'OIL'],
     'FIRE': ['FOOD', 'WATER'],
@@ -151,11 +150,13 @@ star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
 star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
 
 
+# TODO ask if anyone understand what is happening over here
+
 def new_game():
-    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
+    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     ship_level = 0
     planet_generator(7, 50, 50)
-    now_planet = 0
+    player_planet = 0
     have = {x: 0 for x in goods}
 
     have['FUEL'] = 1000
@@ -170,25 +171,31 @@ def save(name):
         print(str(PLANET_TYPE))
         print(str(MERCHANTS))
         print(str(ship_level))
-        print(str(now_planet))
+        print(str(player_planet))
         print(str(have))
-        f.write(f'global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have\n'
-                f'PLANETS = {str(PLANETS)}\n'
-                f'PLANET_NAMES = {str(PLANET_NAMES)}\n'
-                f'PLANET_TYPE = {str(PLANET_TYPE)}\n'
-                f'MERCHANTS = {str(MERCHANTS)}\n'
-                f'ship_level = {ship_level}\n'
-                f'now_planet = {now_planet}\n'
-                f'have = {str(have)}\n')
+        f.write(f'{str(PLANETS)}\n'
+                f'{str(PLANET_NAMES)}\n'
+                f'{str(PLANET_TYPE)}\n'
+                f'{str(MERCHANTS)}\n'
+                f'{ship_level}\n'
+                f'{player_planet}\n'
+                f'{str(have)}\n')
 
 
 def load(name):
-    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
-    print(1213)
+    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     with open(name, mode='r') as f:
-        global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
-        exec('\n'.join(f.readlines()))
-    print(PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have, sep='\n')
+        global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
+        text = f.readlines()
+        PLANETS = eval(text[0])
+        PLANET_NAMES = eval(text[1])
+        PLANET_TYPE = eval(text[2])
+        MERCHANTS = eval(text[3])
+        ship_level = eval(text[4])
+        player_planet = eval(text[5])
+        have = eval(text[6])
+        print(PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have, sep='\n')
+        return PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
 
 
 # . is empty
@@ -246,7 +253,8 @@ def generate_merchant(planet_type):
     for _ in range(randint(2, 4)):
         x, y = random.choice(goods), random.choice(goods)
         if x != y:
-            res.append((x, y, *optimize(COSTS[planet_type][y] + randint(0, 2), COSTS[planet_type][x] + randint(0, 10))))
+            res.append((x, y, *optimize(int(COSTS[planet_type][y] * (1 + randint(0, 2) / 100)),
+                                        int(COSTS[planet_type][x] * (1 + randint(0, 10) / 100)))))
     return res
 
 
@@ -301,8 +309,6 @@ def planet_generator(n, w, h):
     )
 
     middle_shop2_up = middle_shop2_down[::-1]
-
-    # TODO ask if anyone understand what is happening over here
 
     big_shop_down = arr_from_str(
         '# # # # # # # # #\n'
@@ -369,7 +375,7 @@ def planet_generator(n, w, h):
                 field[i][j] = staring_zone[i][j]
 
         problems = 0
-        while problems < 20:
+        while problems < 100:
             obj = random.choice(terrain)
             i, j = randint(0, h), randint(0, w)
             ok = True
@@ -460,6 +466,7 @@ def terminate():
 
 
 def start_screen():
+    global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     intro_text = ["Название игры",
                   "Правила игры:",
                   "Нажмите пробел или левую кнопку мыши,", "чтобы подлететь вверх.",
@@ -492,10 +499,17 @@ def start_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                new_game()
-                return map_selection(now_planet)
+                return
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # TODO ask if he wants new game or ald game
+                try:
+                    PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
+                        'last_save.txt')
+                    return map_selection(player_planet)
+                except:
+                    new_game()
+                    return map_selection(player_planet)
+
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -515,10 +529,8 @@ class PlanetView(pygame.sprite.Sprite):
         self.player_here = player_here
 
 
-# TODO save sometimes
-
 def map_selection(player_planet_num):
-    global player_planet
+    global player_planet, PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     player_planet = player_planet_num
     # TODO find space.png for background
     fon = pygame.Surface([WIDTH, HEIGHT])
@@ -548,14 +560,16 @@ def map_selection(player_planet_num):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                save('last_save.txt')
                 terminate()
+                return
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 for planet in planets:
                     if planet.rect.collidepoint(*event.pos):
-                        save('file.txt')
+                        save('last_save.txt')
                         if planet.player_here:
                             planet_game(planet.num)
-                            save('file.txt')
+                            save('last_save.txt')
                         else:
                             # TODO check if player is sure
 
@@ -579,13 +593,14 @@ def map_selection(player_planet_num):
                                 planet = random.choice(list(planets))
                             planet.player_here = True
                             player_planet = planet.num
-                            save('file.txt')
+                            save('last_save.txt')
                             break
             elif event.type == pygame.KEYDOWN:
                 print(123)
                 if event.key == pygame.K_l:
                     print(56)
-                    load('file.txt')
+                    PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
+                        'last_save.txt')
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
@@ -651,11 +666,13 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '$':
-            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
+            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect()
             self.rect.center = (tile_width * (pos_x + 0.5), tile_height * (pos_y + 0.5))
         elif tile_type[0] == '?':
-            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
+            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == 'u':
@@ -903,7 +920,9 @@ def trade_game(screen, merchant, player):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                save('last_save.txt')
                 terminate()
+                return
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return
@@ -916,7 +935,7 @@ def trade_game(screen, merchant, player):
                             player.change(merchant['change'][i])
                         else:
                             player.change(['PETROLEUM', 'ARTJOMEUM'][i])
-                        if randint(0, 5) == 0:
+                        if randint(0, 5) == 0 and merchant['change'] != 'UPGRADE':
                             buttons.pop(-1)
                             merchant['change'].pop(i)
                         break
@@ -973,7 +992,9 @@ def planet_game(num):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                save('last_save.txt')
                 terminate()
+                return
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_i:
                     pass
@@ -1032,6 +1053,7 @@ def flight_game(level_max):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
+                return
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and iss:
                     player.move()
