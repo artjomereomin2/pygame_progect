@@ -817,14 +817,6 @@ def show_action(player):
         send_message('Меняться будем, жми Enter.')
 
 
-def get_info_about_goods_to_buy(good, planet):
-    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_buy[goods[int(good)]][planet]]
-
-
-def get_info_about_goods_to_sell(good, planet):
-    return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_sell[goods[int(good)]][planet]]
-
-
 def show_parameters(screen):
     font = pygame.font.Font(None, 50)
     text = font.render('; '.join([f'{name}:{have[name]}' for name in have.keys()]), True, (255, 255, 255))
