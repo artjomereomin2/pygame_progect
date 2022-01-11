@@ -502,13 +502,12 @@ def start_screen():
                 return
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # TODO ask if he wants new game or ald game
-                try:
-                    PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
-                        'last_save.txt')
-                    return map_selection(player_planet)
-                except:
-                    new_game()
-                    return map_selection(player_planet)
+
+                PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
+                    'last_save.txt')
+                return map_selection(player_planet)
+                '''new_game()
+                return map_selection(player_planet)'''
 
         pygame.display.flip()
         clock.tick(FPS)
@@ -642,7 +641,6 @@ def generate_level(level, level_type):
                 if MERCHANTS[int(level[y][x][1:])]['last_trade'] is not None and datetime.datetime.now() - \
                         MERCHANTS[int(level[y][x][1:])]['last_trade'] > datetime.timedelta(minutes=10):
                     MERCHANTS[int(level[y][x][1:])]['change'] = generate_merchant(level_type)
-                MERCHANTS[int(level[y][x][1:])]['last_trade'] = datetime.datetime.now()
             elif level[y][x][0] == 'u':
                 Tile(level[y][x], x, y)
 
@@ -846,14 +844,18 @@ def show_parameters(screen):
 }'''
 
 
-def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
+def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None, width=None, min_lines=None):
     Font = pygame.font.Font(None, font)
     message_top = y
     text_top = y
     text_x = x
     mxw = 0
     to_blit = []
-    for line in line_text(text, line_size):
+    if width == None:
+        lined_text = line_text(text, line_size)
+    else:
+        lined_text = line_text(text, width // Font.render('a', True, color).get_width())
+    for line in lined_text:
         text = Font.render(line, True, color)
         text_y = text_top
         text_w = text.get_width()
@@ -861,9 +863,14 @@ def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
         # screen.blit(text, (text_x, text_y))
         to_blit.append((text, text_x, text_y))
         text_top += font // 2 + 8
-    message_bottom = text_top + font // 4 - 10
+    message_bottom = text_top - 4
+    if min_lines is not None:
+        message_bottom = message_top + (font // 2 + 8) * min_lines - 4
     message_left = x
-    message_right = Font.render('a' * line_size, True, color).get_width() + x
+    if width is None:
+        message_right = Font.render('a' * line_size, True, color).get_width() + x
+    else:
+        message_right = width + message_left
     if fon_color is not None:
         pygame.draw.rect(screen, fon_color,
                          ((message_left, message_top), (message_right - message_left, message_bottom - message_top)))
@@ -877,15 +884,15 @@ def trade_game(screen, merchant, player):
     print()
     print(merchant)
     # TODO show inventory
-    window_w = 400
+    window_w = 450
     window_h = 600
 
     buttons = []
     k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
                      f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
-                     (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+                     (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
     k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
-                     (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+                     (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
     if merchant['change'] != 'UPGRADE':
         for offer in merchant['change']:
             screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10, k))
@@ -893,7 +900,7 @@ def trade_game(screen, merchant, player):
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                              f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
-                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+                             (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
             button.append(w)
             button.append(k - button[1])
             buttons.append(button)
@@ -904,7 +911,7 @@ def trade_game(screen, merchant, player):
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                              f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
-                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+                             (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
             button.append(w)
             button.append(k - button[1])
             buttons.append(button)
@@ -951,23 +958,25 @@ def trade_game(screen, merchant, player):
 
         k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
                          f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
-                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+                         (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
         k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
-                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
+                         (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
         if merchant['change'] != 'UPGRADE':
             for offer in merchant['change']:
                 screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10, k))
                 screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                                  f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
-                                 (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+                                 (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
+                                 min_lines=3)
         else:
             for x in ['PETROLEUM', 'ARTJOMEUM']:
                 screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10, k))
                 screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
                                  f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
-                                 (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
+                                 (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
+                                 min_lines=3)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -1011,8 +1020,10 @@ def planet_game(num):
                         return
                     elif tile.type[0] == '=':
                         trade_game(screen, MERCHANTS[int(tile.type[1:])], player)
+                        MERCHANTS[int(tile.type[1:])]['last trade'] = datetime.datetime.now()
                     elif tile.type[0] == 'u':
                         trade_game(screen, MERCHANTS[int(tile.type[1:])], player)
+                        MERCHANTS[int(tile.type[1:])]['last trade'] = datetime.datetime.now()
         # изменяем ракурс камеры
         camera.update(player)
         # обновляем положение всех спрайтов
