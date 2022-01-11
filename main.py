@@ -93,11 +93,11 @@ default_message = []
 
 text_to_blit = []
 
-screen_rect = (-50, 0, WIDTH + 50, HEIGHT)
+screen_rect = (-100, 0, WIDTH + 100, HEIGHT)
 screen_rect_for_planets = (0, 0, WIDTH, HEIGHT)
 
 
-def load_image(name, colorkeylist=None, size=None, rotate=0):
+def load_image(name, color_key_list=None, size=None, rotate=0):
     if isinstance(name, str):
         fullname = os.path.join('data', name)
         # если файл не существует, то выходим
@@ -108,14 +108,14 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
         image = pygame.transform.rotate(image, rotate)
     else:
         image = name
-    if colorkeylist is not None:
+    if color_key_list is not None:
         image = image.convert()
-        if colorkeylist[0] == -1:
-            colorkeylist[0] = image.get_at((0, 0))
-        image.set_colorkey(colorkeylist[0])
-        colorkeylist.pop()
-        if len(colorkeylist) > 0:
-            image = load_image(image, colorkeylist=colorkeylist, size=size)
+        if color_key_list[0] == -1:
+            color_key_list[0] = image.get_at((0, 0))
+        image.set_colorkey(color_key_list[0])
+        color_key_list.pop()
+        if len(color_key_list) > 0:
+            image = load_image(image, color_key_list=color_key_list, size=size)
     else:
         image = image.convert_alpha()
     if size is not None:
@@ -128,7 +128,7 @@ merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures
 mystery_merchants_images = [load_image('merchant.png', [-1], rotate=90)]
 
 # TODO make cool planet images
-planet_images = [load_image('garbage.png', rotate=i, colorkeylist=[-1]) for i in range(0, 180, 30)]
+planet_images = [load_image('garbage.png', rotate=i, color_key_list=[-1]) for i in range(0, 180, 30)]
 
 player_x, player_y = None, None
 
@@ -501,7 +501,7 @@ def start_screen():
 
 
 def calculate_distance(x1, y1, x2, y2):
-    return 10
+    return round(0.5 * ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5)
 
 
 # TODO planet images
@@ -651,11 +651,13 @@ class Tile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '$':
-            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
+            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect()
-            self.rect.center = (tile_width * (pos_x + 0.5), tile_height * (pos_y + 0.5))
+            self.rect.center = round((tile_width * (pos_x + 0.5), tile_height * (pos_y + 0.5)))
         elif tile_type[0] == '?':
-            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']], (tile_width * 2, tile_height * 2))
+            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == 'u':
@@ -697,8 +699,8 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
         global ship_level
         print(offer)
         if type(offer) == tuple:
-            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[
-                offer[1]] <= upgrades[ship_level]['грузоподъёмность']:
+            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[offer[1]]\
+                    <= upgrades[ship_level]['грузоподъёмность']:
                 have[offer[1]] -= offer[3]
                 have[offer[0]] += offer[2]
             else:
@@ -873,7 +875,8 @@ def trade_game(screen, merchant, player):
 
     buttons = []
     k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
-                     f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
+                     f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь."
+                     f" С планеты {merchant['home planet']} я есть.",
                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
     k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
@@ -883,7 +886,8 @@ def trade_game(screen, merchant, player):
             screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75, k))
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                             f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                             f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]},"
+                             f" тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
                              (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
             button.append(w)
             button.append(k - button[1])
@@ -894,7 +898,8 @@ def trade_game(screen, merchant, player):
             screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                             f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                             f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]},"
+                             f" тебе давать я корабля улучшение.",
                              (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
             button.append(w)
             button.append(k - button[1])
@@ -939,7 +944,8 @@ def trade_game(screen, merchant, player):
         pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2, 0), (window_w, window_h)))
 
         k, w = draw_text((WIDTH - window_w) // 2 + 10, 10,
-                         f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
+                         f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь."
+                         f" С планеты {merchant['home planet']} я есть.",
                          (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
         k, w = draw_text((WIDTH - window_w) // 2 + 10, k, "К лучшему меняемся:",
                          (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128))
@@ -948,14 +954,16 @@ def trade_game(screen, merchant, player):
                 screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10, k))
                 screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                                 f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                                 f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}"
+                                 f", тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
                                  (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
         else:
             for x in ['PETROLEUM', 'ARTJOMEUM']:
                 screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10, k))
                 screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90, k,
-                                 f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                                 f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]},"
+                                 f" тебе давать я корабля улучшение.",
                                  (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))
         pygame.display.flip()
         clock.tick(FPS)
@@ -1024,8 +1032,8 @@ def flight_game(level_max):
     global player, iss
     player = FlyingPlayer(100, HEIGHT // 2)
     particles = []
-    sec = 0
-    coeff = 0.5
+    sec = 50
+    ratio = 0.5
     level = 0
 
     while True:
@@ -1045,9 +1053,9 @@ def flight_game(level_max):
         screen.fill((0, 0, 0))
 
         # Астероиды
-        if iss and coeff != -1:
+        if iss and ratio != -1:
             sec += 1
-        if sec == int(FPS / coeff):
+        if sec == int(FPS / ratio):
             sec = 0
             level += 1
             big = randint(0, 10) == 0
@@ -1055,10 +1063,10 @@ def flight_game(level_max):
         # При увеличении порога level время растёт по закону 7.32 * level - 0.04 (в секундах)
         if level == level_max:
             level = 0
-            coeff += 0.5
-        if coeff >= FPS / 25:
-            coeff = -1
-        if len(garbage_group) == 0 and coeff == -1:
+            ratio += 0.5
+        if ratio >= FPS / 25:
+            ratio = -1
+        if len(garbage_group) == 0 and ratio == -1:
             for sprite in all_sprites:
                 sprite.kill()
             return True
@@ -1076,10 +1084,10 @@ def flight_game(level_max):
             if pygame.sprite.collide_mask(m, player):
                 time = 400 + 200 * m.big
                 particles.append(SpawnParticles((player.rect.centerx, player.rect.centery), 0, 0,
-                                                [load_image('fallingsmoke.png', [-1], (x, x))
+                                                [load_image('falling_smoke.png', [-1], (x, x))
                                                  for x in (10, 20, 30)], change=lambda x: x % 5 == 0, times=time,
                                                 follow_player=True, gravity=(-1, 0), count=40))
-                if m.big == False:
+                if not m.big:
                     player.de_baf(time, 1 / upgrades[ship_level]['защита'])
                 else:
                     player.de_baf(time, 2 / upgrades[ship_level]['защита'])
@@ -1091,7 +1099,7 @@ def flight_game(level_max):
             for _ in range(3):
                 Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                          [star_picture],
-                         (-1, 0), dokill=False, groups=(stars_sprites, all_sprites))
+                         (-1, 0), do_kill=False, groups=(stars_sprites, all_sprites))
 
         if iss:
             all_sprites.update()
@@ -1107,7 +1115,7 @@ def flight_game(level_max):
         clock.tick(FPS)
 
 
-'''def end_screen(time):
+def end_screen(time):
     intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь, чтобы продолжить"]
 
     fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
@@ -1139,7 +1147,7 @@ def flight_game(level_max):
             elif (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and timer >= 100:
                 return main_game(20)
         pygame.display.flip()
-        clock.tick(FPS)'''
+        clock.tick(FPS)
 
 
 # do not need this
@@ -1223,7 +1231,7 @@ class FlyingPlayer(AnimatedSprite):
                 i -= 1
             i += 1
         self.speedy += self.G
-        self.rect.y += self.speedy
+        self.rect.y += round(self.speedy)
         other_image = self.other_image.copy()
         other_image.blit(super().update(), (160, 30))
         self.image = other_image
@@ -1240,7 +1248,7 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, dokill=True,
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, do_kill=True,
                  groups=(all_sprites, particles_sprites)):
         super().__init__(*groups)
         self.pictures = pictures
@@ -1260,7 +1268,7 @@ class Particle(pygame.sprite.Sprite):
         # гравитация будет одинаковой (значение константы)
         self.gravity = gravity
 
-        self.dokill = dokill
+        self.do_kill = do_kill
 
     def update(self):
         self.time += 1
@@ -1275,7 +1283,7 @@ class Particle(pygame.sprite.Sprite):
 
         if self.change(self.time):
             self.image_ind += 1
-            if self.image_ind == len(self.pictures) and self.dokill:
+            if self.image_ind == len(self.pictures) and self.do_kill:
                 self.kill()
                 return
             self.image = self.pictures[self.image_ind % len(self.pictures)]
