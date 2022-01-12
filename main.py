@@ -122,6 +122,8 @@ def load_image(name, colorkeylist=None, size=None, rotate=0):
     return image
 
 
+text_frame = load_image('textframe.png', colorkeylist=[-1])
+
 merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures of merchants
 
 mystery_merchants_images = [load_image('merchant.png', [-1], rotate=90)]
@@ -166,13 +168,6 @@ def new_game():
 
 def save(name):
     with open(name, mode='w') as f:
-        print(str(PLANETS))
-        print(str(PLANET_NAMES))
-        print(str(PLANET_TYPE))
-        print(str(MERCHANTS))
-        print(str(ship_level))
-        print(str(player_planet))
-        print(str(have))
         f.write(f'{str(PLANETS)}\n'
                 f'{str(PLANET_NAMES)}\n'
                 f'{str(PLANET_TYPE)}\n'
@@ -194,7 +189,6 @@ def load(name):
         ship_level = eval(text[4])
         player_planet = eval(text[5])
         have = eval(text[6])
-        print(PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have, sep='\n')
         return PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
 
 
@@ -397,7 +391,7 @@ def planet_generator(n, w, h):
                                         'home planet': random.choice(PLANET_NAMES),
                                         'image_num': randint(0, len(merchants_images) - 1),
                                         'change': generate_merchant(PLANET_TYPE[_]),
-                                        'last_trade': None}
+                                        'last trade': None}
                             MERCHANTS.append(merchant)
                             field[i1 % h][j1 % w] = f'={len(MERCHANTS) - 1}'
                         elif field[i1 % h][j1 % w] == 'u':
@@ -405,7 +399,7 @@ def planet_generator(n, w, h):
                                         'home planet': random.choice(PLANET_NAMES),
                                         'image_num': randint(0, len(merchants_images) - 1),
                                         'change': 'UPGRADE',
-                                        'last_trade': None}
+                                        'last trade': None}
                             MERCHANTS.append(merchant)
                             field[i1 % h][j1 % w] = f'u{len(MERCHANTS) - 1}'
 
@@ -416,12 +410,9 @@ def planet_generator(n, w, h):
                 if field[i][j][0] == '=':
                     for i2 in range(i - 2, i + 3):
                         for j2 in range(j - 2, j + 3):
-                            print(field[i2 % h][j2 % w], end=' ')
                             if abs(i2 - i) + abs(j2 - j) <= 2:
                                 if field[i2 % h][j2 % w] == '$':
                                     field[i2 % h][j2 % w] = f'${field[i][j][1:]}'
-                        print()
-                    print()
                 if field[i][j][0] == 'u':
                     for i2 in range(i - 2, i + 3):
                         for j2 in range(j - 2, j + 3):
@@ -429,9 +420,6 @@ def planet_generator(n, w, h):
                                 if field[i2 % h][j2 % w] == '?':
                                     field[i2 % h][j2 % w] = f'?{field[i][j][1:]}'
         PLANETS.append(field)
-        for row in field:
-            print(row)
-        print()
 
 
 class Garbage(pygame.sprite.Sprite):
@@ -595,9 +583,7 @@ def map_selection(player_planet_num):
                             save('last_save.txt')
                             break
             elif event.type == pygame.KEYDOWN:
-                print(123)
                 if event.key == pygame.K_l:
-                    print(56)
                     PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
                         'last_save.txt')
         # TODO show where we are(design)
@@ -638,8 +624,8 @@ def generate_level(level, level_type):
                 Tile('l', x, y)
             elif level[y][x][0] == '=':
                 Tile(level[y][x], x, y)
-                if MERCHANTS[int(level[y][x][1:])]['last_trade'] is not None and datetime.datetime.now() - \
-                        MERCHANTS[int(level[y][x][1:])]['last_trade'] > datetime.timedelta(minutes=10):
+                if MERCHANTS[int(level[y][x][1:])]['last trade'] is not None and datetime.datetime.now() - \
+                        MERCHANTS[int(level[y][x][1:])]['last trade'] > datetime.timedelta(minutes=10):
                     MERCHANTS[int(level[y][x][1:])]['change'] = generate_merchant(level_type)
             elif level[y][x][0] == 'u':
                 Tile(level[y][x], x, y)
@@ -710,7 +696,6 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
 
     def change(self, offer):
         global ship_level
-        print(offer)
         if type(offer) == tuple:
             if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[
                 offer[1]] <= upgrades[ship_level]['грузоподъёмность']:
@@ -750,32 +735,26 @@ class Camera:
 
 
 def blit_text(screen):
-    while len(text_to_blit) > 2:
+    while len(text_to_blit) > 1:
         text_to_blit.pop(0)
-    font = pygame.font.Font(None, 25)
-    text_top = 0
-    res = []
-    for message_ind in range(len(text_to_blit)):
-        res.append('')
-        if message_ind == len(text_to_blit) - 1:
-            res.append('    Новое сообщение:')
-        res.extend(text_to_blit[message_ind])
-    message = default_message.copy()
-    message.extend(res)
-    for line in message:
-        text = font.render(line, True, (255, 255, 255))
-        text_x = WIDTH - 200
-        text_y = text_top
-        text_w = text.get_width()
-        text_h = text.get_height()
+    if text_to_blit:
+        line = text_to_blit[0][0]
+        if datetime.datetime.now() - text_to_blit[0][1] <= datetime.timedelta(seconds=2):
+            font = pygame.font.Font(None, 25)
+            text = font.render(line, True, (255, 255, 255))
+            text_w = text.get_width()
+            text_h = text.get_height()
+            text_x = (WIDTH - text_w) // 2
+            text_y = HEIGHT - 10 - text_h
 
-        rect = pygame.Surface([text_w, text_h])
-        rect.fill((0, 0, 0))
-        rect.set_alpha(99)
-        screen.blit(rect, (text_x, text_y))
+            rect = pygame.Surface([text_w + 20, text_h + 20])
+            rect.fill((0, 0, 0))
+            rect.set_alpha(255)
+            screen.blit(rect, (text_x - 10, text_y - 10))
 
-        screen.blit(text, (text_x, text_y))
-        text_top += 20
+            screen.blit(pygame.transform.scale(text_frame, (text_w + 40, text_h + 20)), (text_x - 20, text_y - 10))
+
+            screen.blit(text, (text_x, text_y))
 
 
 def line_text(text, line_size=20):
@@ -783,6 +762,7 @@ def line_text(text, line_size=20):
     i = 0
     for word in text.split():
         if len(lines[i]) + len(word) + 1 < line_size:
+
             if lines[i] != '':
                 lines[i] += ' ' + word
             else:
@@ -794,8 +774,7 @@ def line_text(text, line_size=20):
 
 
 def send_message(text):
-    lines = line_text(text)
-    text_to_blit.append(lines)
+    text_to_blit.append((text, datetime.datetime.now()))
 
 
 def find_tile(player):
@@ -880,9 +859,6 @@ def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None, wid
 
 
 def trade_game(screen, merchant, player):
-    print(have)
-    print()
-    print(merchant)
     # TODO show inventory
     window_w = 450
     window_h = 600
@@ -929,7 +905,6 @@ def trade_game(screen, merchant, player):
                 for i in range(len(buttons)):
                     if pygame.Rect((buttons[i][0], buttons[i][1]), (buttons[i][2], buttons[i][3])).collidepoint(
                             event.pos):
-                        print(i)
                         if merchant['change'] != 'UPGRADE':
                             player.change(merchant['change'][i])
                         else:
@@ -946,8 +921,8 @@ def trade_game(screen, merchant, player):
         player_group.draw(screen)
         particles_sprites.update()
         particles_sprites.draw(screen)
+
         show_parameters(screen)
-        blit_text(screen)
 
         shadow = pygame.Surface([WIDTH, HEIGHT])
         shadow.fill((0, 0, 0))
@@ -977,6 +952,7 @@ def trade_game(screen, merchant, player):
                                  f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
                                  (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
                                  min_lines=3)
+        blit_text(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -1012,6 +988,7 @@ def planet_game(num):
                     player.move(0, -tile_height)
                     show_action(player)
                 elif event.key == pygame.K_RETURN:
+                    text_to_blit.clear()
                     # TODO smarter system of finding tile player on
                     tile = find_tile(player)
                     if tile.type == 'l':
