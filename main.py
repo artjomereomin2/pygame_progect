@@ -530,14 +530,15 @@ def map_selection(player_planet_num):
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
-            PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=True)
+            PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=True)
         else:
             while True:
-                self = PlanetView((randint(0, WIDTH - 20), randint(0, HEIGHT - 20)), i, player_here=False)
+                self = PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=False)
                 for sprite in planets:
-                    if pygame.sprite.collide_rect(self, sprite) and not self.rect.colliderect(screen_rect_for_planets):
-                        is_kill = True
-                        break
+                    if self is not sprite:
+                        if pygame.sprite.collide_rect(self, sprite):
+                            is_kill = True
+                            break
                 else:
                     is_kill = False
                 if is_kill:
@@ -654,7 +655,7 @@ class Tile(pygame.sprite.Sprite):
             self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
                                                 (tile_width * 2, tile_height * 2))
             self.rect = self.image.get_rect()
-            self.rect.center = round((tile_width * (pos_x + 0.5), tile_height * (pos_y + 0.5)))
+            self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
         elif tile_type[0] == '?':
             self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
                                                 (tile_width * 2, tile_height * 2))
