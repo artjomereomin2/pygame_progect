@@ -456,20 +456,20 @@ def terminate():
 def start_screen():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     intro_text = ["Название игры",
-                  "Послание разработчиков:",
+                  "",
                   "Приветствуем вас. Вы разбились в неизвестной", "вам галактике, но ваш друг помог вам.",
                   "Он дал вам немного топлива, золота",
                   "и простенький, но работающий корабль.",
                   "Цель: выжить, искать, узнать тайное, помочь,",
                   "задать правильный вопрос.",
-                  random.choice(['Для перелёта между планетами, нажмите на нужную вам планету',
-                                 'Вы находитесь на планете с особым знаком',
-                                 'Нажав на свою планету, можно приземлиться',
-                                 'Торгуйте и следите за ценами',
-                                 'Да прибудет с вами сила']),
-                  "Нажмите что-нибудь для начала игры."]
+                  random.choice(['Нажмите на планету для перелёта на неё.',
+                                 'Вы находитесь на планете с особым знаком.',
+                                 'Нажав на свою планету, можно приземлиться.',
+                                 'Торгуйте и следите за ценами.',
+                                 'Да прибудет с вами сила.']),
+                  ""]
 
-    buttons = {'NEW GAME': [WIDTH // 2 + 100, HEIGHT // 2], 'LOAD': [WIDTH // 2 + 100, HEIGHT // 2 + 60]}
+    buttons = {'NEW GAME': [100, 100], 'LOAD': [100, 200]}
 
     fullname = os.path.join('last_save.txt')
     need_load = os.path.isfile(fullname)
@@ -480,8 +480,6 @@ def start_screen():
                 terminate()
                 return
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                print(buttons['NEW GAME'][0], event.pos[0], buttons['NEW GAME'][2], buttons['NEW GAME'][
-                    1], event.pos[1], buttons['NEW GAME'][3])
                 if buttons['NEW GAME'][0] <= event.pos[0] <= buttons['NEW GAME'][2] + buttons['NEW GAME'][0] and \
                         buttons['NEW GAME'][1] <= event.pos[1] <= buttons['NEW GAME'][3] + buttons['NEW GAME'][1]:
                     new_game()
@@ -495,7 +493,7 @@ def start_screen():
         fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 30)
-        text_coord = 300
+        text_coord = 290
         mx_right = 0
         to_blit = []
         for line in intro_text:
@@ -510,14 +508,18 @@ def start_screen():
 
         # (0, 0, 0,50), ((10, 200), (mx_right, text_coord - 200))
         image = pygame.Surface(
-            [font.render('a' * max([len(x) for x in intro_text]), True, (0, 0, 0)).get_width() + 10, text_coord - 300])
+            [max(x[0].get_width() for x in to_blit) + 20, HEIGHT])
         image.fill((0, 0, 0))
-        image.set_alpha(128)
-        screen.blit(image, (0, 300))
+        image.set_alpha(174)
+        screen.blit(image, (0, 0))
+
+        pygame.draw.rect(screen, (128, 128, 255),
+                         ((2, 290), (max(x[0].get_width() for x in to_blit) + 20, text_coord - 282)), width=4)
+        pygame.draw.rect(screen, (128, 128, 255),
+                         ((2, 2), (max(x[0].get_width() for x in to_blit) + 20, 290)), width=4)
 
         for x in to_blit:
             screen.blit(*x)
-
         font = pygame.font.Font(None, 50)
         text = font.render("Новая игра", True, (255, 255, 255))
         text_x = buttons['NEW GAME'][0]
@@ -526,22 +528,22 @@ def start_screen():
         text_h = text.get_height()
         if len(buttons['NEW GAME']) == 2:
             buttons['NEW GAME'].extend([text_w, text_h])
-        pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                               text_w + 20, text_h + 20), 1)
+        pygame.draw.rect(screen, (255, 255, 0), (text_x - 10, text_y - 10,
+                                                 text_w + 20, text_h + 20), 1)
         screen.blit(text, (text_x, text_y))
 
         if need_load:
             font = pygame.font.Font(None, 50)
-            text = font.render("Загрузить игру", True, (255, 255, 255))
-            text_x = buttons['LOAD'][0]
-            text_y = buttons['LOAD'][1]
-            text_w = text.get_width()
-            text_h = text.get_height()
-            if len(buttons['LOAD']) == 2:
-                buttons['LOAD'].extend([text_w, text_h])
-            pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                                   text_w + 20, text_h + 20), 1)
-            screen.blit(text, (text_x, text_y))
+        text = font.render("Загрузить игру", True, (255, 255, 255))
+        text_x = buttons['LOAD'][0]
+        text_y = buttons['LOAD'][1]
+        text_w = text.get_width()
+        text_h = text.get_height()
+        if len(buttons['LOAD']) == 2:
+            buttons['LOAD'].extend([text_w, text_h])
+        pygame.draw.rect(screen, (255, 255, 0), (text_x - 10, text_y - 10,
+                                                 text_w + 20, text_h + 20), 1)
+        screen.blit(text, (text_x, text_y))
 
         pygame.display.flip()
         clock.tick(FPS)
