@@ -9,8 +9,6 @@ import random
 import datetime
 from random import randint
 import pygame
-from classes import PlanetView, Tile, PlayerOnPlanet, Camera, Garbage, SpawnParticles, Particle, FlyingPlayer, \
-    AnimatedSprite
 
 FPS = 50
 
@@ -167,13 +165,6 @@ def new_game():
 
 def save(name):
     with open(name, mode='w') as f:
-        print(str(PLANETS))
-        print(str(PLANET_NAMES))
-        print(str(PLANET_TYPE))
-        print(str(MERCHANTS))
-        print(str(ship_level))
-        print(str(now_planet))
-        print(str(have))
         f.write(f'global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have\n'
                 f'PLANETS = {str(PLANETS)}\n'
                 f'PLANET_NAMES = {str(PLANET_NAMES)}\n'
@@ -186,11 +177,9 @@ def save(name):
 
 def load(name):
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
-    print(1213)
     with open(name, mode='r') as f:
         global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have
         exec('\n'.join(f.readlines()))
-    print(PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, now_planet, have, sep='\n')
 
 
 # . is empty
@@ -412,12 +401,9 @@ def planet_generator(n, w, h):
                 if field[i][j][0] == '=':
                     for i2 in range(i - 2, i + 3):
                         for j2 in range(j - 2, j + 3):
-                            print(field[i2 % h][j2 % w], end=' ')
                             if abs(i2 - i) + abs(j2 - j) <= 2:
                                 if field[i2 % h][j2 % w] == '$':
                                     field[i2 % h][j2 % w] = f'${field[i][j][1:]}'
-                        print()
-                    print()
                 if field[i][j][0] == 'u':
                     for i2 in range(i - 2, i + 3):
                         for j2 in range(j - 2, j + 3):
@@ -425,9 +411,32 @@ def planet_generator(n, w, h):
                                 if field[i2 % h][j2 % w] == '?':
                                     field[i2 % h][j2 % w] = f'?{field[i][j][1:]}'
         PLANETS.append(field)
-        for row in field:
-            print(row)
-        print()
+
+
+class Garbage(pygame.sprite.Sprite):
+    image_small = load_image("garbage.png", [-1], (75, 75), 180)
+    image_big = load_image("big_garbage.png", [-1], (200, 200))
+
+    def __init__(self, pos, big=False):
+        super().__init__(all_sprites, garbage_group)
+        if big:
+            self.image = Garbage.image_big
+        else:
+            self.image = Garbage.image_small
+        self.big = big
+        self.gravitate = 0
+        self.rect = self.image.get_rect()
+        # вычисляем маску для эффективного сравнения
+        # self.mask = pygame.mask.from_surface(self.image)
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+
+    def update(self):
+        self.rect.x -= 3 + int(self.gravitate)
+        self.rect.y += +randint(-4, 4)
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+        self.gravitate += G
 
 
 def terminate():
@@ -481,6 +490,14 @@ def calculate_distance(x1, y1, x2, y2):
 
 
 # TODO planet images
+class PlanetView(pygame.sprite.Sprite):
+    def __init__(self, pos, num, player_here=False, **other):
+        super().__init__(planets)
+        self.image = pygame.transform.scale(planet_images[0], (100, 100))
+        self.rect = self.image.get_rect()
+        self.num = num
+        self.rect.x, self.rect.y = pos[0], pos[1]
+        self.player_here = player_here
 
 
 # TODO save sometimes
@@ -551,10 +568,10 @@ def map_selection(player_planet_num):
                             save('file.txt')
                             break
             elif event.type == pygame.KEYDOWN:
-                print(123)
                 if event.key == pygame.K_l:
-                    print(56)
                     load('file.txt')
+                if event.key == pygame.K_i:
+                    inventory(screen)
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
@@ -562,7 +579,6 @@ def map_selection(player_planet_num):
             if planet.player_here:
                 pygame.draw.circle(screen, (0, 255, 0), planet.rect.center, 10)
                 break
-        show_parameters(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -604,8 +620,104 @@ def generate_level(level, level_type):
     return new_player, x + 1, y + 1
 
 
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        self.type = tile_type
+        self.pos_x, self.pos_y = pos_x, pos_y
+        super().__init__(tiles_group, all_sprites)
+        if tile_type == 's':
+            # TODO show to player that ship is here(design)
+            self.image = load_image('hero.png', [-1], (3 * tile_width, 3 * tile_height))
+            self.rect = self.image.get_rect()
+            self.rect.bottom = tile_height * pos_y + tile_height
+            self.rect.centerx = tile_width * pos_x + tile_width // 2
+        elif tile_type == 'l':
+            self.image = exit_image
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] == '$':
+            self.image = pygame.transform.scale(merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
+            self.rect = self.image.get_rect()
+            self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
+        elif tile_type[0] == '?':
+            self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
+                                                (tile_width * 2, tile_height * 2))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] == 'u':
+            self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] == '=':
+            self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+        elif tile_type[0] in tile_images.keys():
+            self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x, tile_height * pos_y)
+
+
 def calc_weight():
     return sum([weight[x] * have[x] for x in goods])
+
+
+class PlayerOnPlanet(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        global have
+        super().__init__(player_group, all_sprites)
+        self.image = pygame.transform.scale(player_image, (
+            tile_width, tile_height))
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+
+    def move(self, x, y):
+        self.rect.x += x
+        self.rect.y += y
+        if len([1 for q in pygame.sprite.spritecollide(self, all_sprites, False) if
+                type(q) == Tile and q.type == '#']):
+            self.rect.x -= x
+            self.rect.y -= y
+
+    def change(self, offer):
+        global ship_level
+        if type(offer) == tuple:
+            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[offer[1]]\
+                    <= upgrades[ship_level]['грузоподъёмность']:
+                have[offer[1]] -= offer[3]
+                have[offer[0]] += offer[2]
+            else:
+                if not have[offer[1]] >= offer[3]:
+                    send_message("В долг не даю.")
+                else:
+                    send_message('А как ты это понесёшь?')
+        else:
+            if have[offer] >= ship_level + 1:
+                have[offer] -= ship_level + 1
+                ship_level += 1
+            else:
+                send_message('В долг не даю.')
+        ship_level = min(ship_level, 9)
+
+
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+        obj.rect.x = obj.rect.x % (level_x * tile_width)
+        obj.rect.y = obj.rect.y % (level_y * tile_height)
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
 def blit_text(screen):
@@ -682,20 +794,48 @@ def get_info_about_goods_to_sell(good, planet):
     return [max(1, x + randint(-1, 1)) for x in info_about_goods_to_sell[goods[int(good)]][planet]]
 
 
-def show_parameters(screen):
-    font = pygame.font.Font(None, 50)
-    text = font.render('; '.join([f'{name}:{have[name]}' for name in have.keys()]), True, (255, 255, 255))
-    text_x = WIDTH // 2 - text.get_width() // 2
-    text_y = 0
-    text_w = text.get_width()
-    text_h = text.get_height()
+def inventory(screen):
+    window_w = 320
+    window_h = 600
 
-    rect = pygame.Surface([text_w, text_h])
-    rect.fill((0, 0, 0))
-    rect.set_alpha(90)
-    screen.blit(rect, (text_x, text_y))
+    buttons = []
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
 
-    screen.blit(text, (text_x, text_y))
+        screen.fill((0, 0, 0))
+
+        all_sprites.update()
+        all_sprites.draw(screen)
+        blit_text(screen)
+
+        shadow = pygame.Surface([WIDTH, HEIGHT])
+        shadow.fill((0, 0, 0))
+        shadow.set_alpha(164)
+        screen.blit(shadow, (0, 0))
+
+        pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2 - 200, 0), (window_w, window_h)))
+
+        k1, w = draw_text((WIDTH - window_w) // 2 - 200 + 10, 10,
+                         f"Инвентарь",
+                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128), width=300)
+        k = k1
+        iss = True
+        for i, offer in enumerate(goods):
+            if i > 4 and iss:
+                k = k1
+                iss = False
+            screen.blit(pictures_of_goods[offer], ((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k))
+            k += 71 + 5
+            k, w = draw_text((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k,
+                             f"{have[offer]}",
+                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128), width=71)
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 '''pictures_of_goods = {
@@ -704,21 +844,27 @@ def show_parameters(screen):
     'WATER': load_image('water.png'),
     'FOOD': load_image('food.png'),
     'IRON': load_image('iron.png'),
-    'PLUTONIUM': load_image('plutonium.png'),
+    'PLk, w = draw_text((WIDTH - window_w) // 2 + 90, k,
+                             f"{offer[3]} {goods_translated[goods.index(offer)]}",
+                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128))UTONIUM': load_image('plutonium.png'),
     'OIL': load_image('oil.png'),
     'PETROLEUM': load_image('petroleum.png'),
     'ARTJOMEUM': load_image('artjomeum.png')
 }'''
 
 
-def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
+def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None, width=None, min_lines=None):
     Font = pygame.font.Font(None, font)
     message_top = y
     text_top = y
     text_x = x
     mxw = 0
     to_blit = []
-    for line in line_text(text, line_size):
+    if width == None:
+        lined_text = line_text(text, line_size)
+    else:
+        lined_text = line_text(text, width // Font.render('a', True, color).get_width())
+    for line in lined_text:
         text = Font.render(line, True, color)
         text_y = text_top
         text_w = text.get_width()
@@ -726,21 +872,25 @@ def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
         # screen.blit(text, (text_x, text_y))
         to_blit.append((text, text_x, text_y))
         text_top += font // 2 + 8
-    message_bottom = text_top + font // 4 - 10
+    message_bottom = text_top - 4
+    if min_lines is not None:
+        message_bottom = message_top + (font // 2 + 8) * min_lines - 4
     message_left = x
-    message_right = Font.render('a' * line_size, True, color).get_width() + x
+    if width is None:
+        message_right = Font.render('a' * line_size, True, color).get_width() + x
+    else:
+        message_right = width + message_left
     if fon_color is not None:
         pygame.draw.rect(screen, fon_color,
-                         ((message_left, message_top), (message_right - message_left, message_bottom - message_top)))
+                         (
+                             (message_left, message_top),
+                             (message_right - message_left, message_bottom - message_top + 6)))
     for d in to_blit:
         screen.blit(d[0], (d[1], d[2]))
-    return message_bottom + 5, Font.render('a' * line_size, True, color).get_width()
+    return message_bottom + 11, Font.render('a' * line_size, True, color).get_width()
 
 
 def trade_game(screen, merchant, player):
-    print(have)
-    print()
-    print(merchant)
     # TODO show inventory
     window_w = 400
     window_h = 600
@@ -788,7 +938,6 @@ def trade_game(screen, merchant, player):
                 for i in range(len(buttons)):
                     if pygame.Rect((buttons[i][0], buttons[i][1]), (buttons[i][2], buttons[i][3])).collidepoint(
                             event.pos):
-                        print(i)
                         if merchant['change'] != 'UPGRADE':
                             player.change(merchant['change'][i])
                         else:
@@ -805,7 +954,7 @@ def trade_game(screen, merchant, player):
         player_group.draw(screen)
         particles_sprites.update()
         particles_sprites.draw(screen)
-        show_parameters(screen)
+        inventory(screen)
         blit_text(screen)
 
         shadow = pygame.Surface([WIDTH, HEIGHT])
@@ -856,7 +1005,7 @@ def planet_game(num):
                 terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_i:
-                    pass
+                    inventory(screen)
                 elif event.key == pygame.K_RIGHT:
                     player.move(tile_width, 0)
                     show_action(player)
@@ -894,7 +1043,6 @@ def planet_game(num):
         player_group.draw(screen)
         particles_sprites.update()
         particles_sprites.draw(screen)
-        show_parameters(screen)
         blit_text(screen)
         pygame.display.flip()
         clock.tick(FPS)
@@ -1023,6 +1171,176 @@ def end_screen(time):
 
 
 # do not need this
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, groups, sheet, columns, rows, x, y, scale_to=None, switch=lambda x: True):
+        super().__init__(*groups)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        if scale_to is not None:
+            for i in range(len(self.frames)):
+                self.frames[i] = pygame.transform.scale(self.frames[i], scale_to)
+        self.time = 0
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+        self.switch = switch
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        self.time += 1
+        if self.switch(self.time):
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
+        return self.frames[self.cur_frame]
+
+
+class FlyingPlayer(AnimatedSprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__((player_group, all_sprites), load_image('fire.png', [-1], size=None, rotate=90), 4, 5,
+                         pos_x,
+                         pos_y,
+                         switch=lambda x: x % 10 == 0, scale_to=(100, 100))
+        self.speedy = 0
+        self.acceleration = 4
+        self.G = 9.8 / FPS
+        self.slow = []
+        self.other_image = load_image('hero.png', [-1], (500, 150))
+        other_image = self.other_image.copy()
+        self.image = other_image
+        self.rect = self.image.get_rect()
+
+        self.mask = pygame.mask.from_surface(self.image)
+
+        self.rect.centerx = pos_x
+        self.rect.centery = pos_y
+
+        self.time = 0
+
+    def move(self):
+        # self.speedy -= self.acceleration
+        if len(self.slow) == 0:
+            self.speedy -= self.acceleration
+        else:
+            value = 0
+            for _, v in self.slow:
+                value += v
+            self.speedy -= self.acceleration - value
+
+    def update(self):
+        global is_not_break
+        if self.rect.top <= -20:
+            self.speedy = 1
+        self.time += 1
+        if self.rect.bottom >= HEIGHT + 100:
+            is_not_break = False
+            return
+        i = 0
+        while i < len(self.slow):
+            self.slow[i][0] -= 1
+            if self.slow[i][0] == 0:
+                self.slow.pop(i)
+                i -= 1
+            i += 1
+        self.speedy += self.G
+        self.rect.y += round(self.speedy)
+        other_image = self.other_image.copy()
+        other_image.blit(super().update(), (160, 30))
+        self.image = other_image
+        self.mask = pygame.mask.from_surface(self.image)
+        is_not_break = True
+
+    def de_baf(self, time=10 ** 3, value=1):
+        self.slow.append([time, value])
+
+
+class Particle(pygame.sprite.Sprite):
+    # сгенерируем частицы разного размера
+    '''fire = [load_image("star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
+
+    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, do_kill=True,
+                 groups=(all_sprites, particles_sprites)):
+        super().__init__(*groups)
+        self.pictures = pictures
+        self.image_ind = random.choice(list(range(len(pictures))))
+        self.image = self.pictures[self.image_ind]
+        self.rect = self.image.get_rect()
+
+        self.time = 0
+
+        self.change = change
+
+        # у каждой частицы своя скорость — это вектор
+        self.velocity = [dx + random.randrange(-4, 5), dy + random.randrange(-4, 5)]
+        # и свои координаты
+        self.rect.x, self.rect.y = pos
+
+        # гравитация будет одинаковой (значение константы)
+        self.gravity = gravity
+
+        self.do_kill = do_kill
+
+    def update(self):
+        self.time += 1
+
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[0] += self.gravity[0]
+        self.velocity[1] += self.gravity[1]
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+
+        if self.change(self.time):
+            self.image_ind += 1
+            if self.image_ind == len(self.pictures) and self.do_kill:
+                self.kill()
+                return
+            self.image = self.pictures[self.image_ind % len(self.pictures)]
+            x, y = self.rect.x, self.rect.y
+            self.rect = self.image.get_rect()
+            self.rect.x, self.rect.y = x, y
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+
+class SpawnParticles:
+    def __init__(self, pos, dx, dy, pictures, count=10, times=1, gravity=(0, 1), change=lambda x: x % 10 == 0,
+                 split=10, follow_player=False):
+        self.alive = 1
+        self.pos = pos
+        self.speed = [dx, dy]
+        self.gravity = gravity
+        self.pictures = pictures
+        self.count = count
+        self.times = times
+        self.split = split
+        self.change = change
+        self.time = 0
+        self.follow_player = follow_player
+
+    def update(self):
+        if self.times > 0:
+            if self.time % self.split == 0:
+                if self.follow_player:
+                    self.pos = player.rect.centerx, player.rect.centery
+                for _ in range(self.count):
+                    Particle(self.pos, *self.speed, self.pictures, self.gravity, self.change)
+            self.times -= 1
+            self.time += 1
+        else:
+            self.alive = -1
 
 
 start_screen()
