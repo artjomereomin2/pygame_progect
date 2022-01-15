@@ -123,7 +123,7 @@ def load_image(name, color_key_list=None, size=None, rotate=0):
     return image
 
 
-text_frame = load_image('textframe.png', colorkeylist=[-1])
+text_frame = load_image('textframe.png', color_key_list=[-1])
 
 merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures of merchants
 
@@ -426,7 +426,7 @@ def planet_generator(n, w, h):
 class Garbage(pygame.sprite.Sprite):
     image_small = load_image("garbage.png", [-1], (75, 75), 180)
     image_big = load_image("big_garbage.png", [-1], (200, 200))
-    super_big = load_image("last_meteor.png", [-1], (HEIGHT, HEIGHT))
+    super_big = load_image("last_meteor.png", [-1], (HEIGHT + 100, HEIGHT + 100))
 
     def __init__(self, pos, big=False, last=False):
         super().__init__(all_sprites, garbage_group)
@@ -518,9 +518,9 @@ def start_screen():
         screen.blit(image, (0, 0))
 
         pygame.draw.rect(screen, (128, 128, 255),
-                         ((2, 290), (max(x[0].get_width() for x in to_blit) + 20, text_coord - 282)), width=4)
+                         ((2, 290), (max(x[0].get_width() for x in to_blit) + 20, text_coord - 282)), 4)
         pygame.draw.rect(screen, (128, 128, 255),
-                         ((2, 2), (max(x[0].get_width() for x in to_blit) + 20, 290)), width=4)
+                         ((2, 2), (max(x[0].get_width() for x in to_blit) + 20, 290)), 4)
 
         for x in to_blit:
             screen.blit(*x)
@@ -578,6 +578,7 @@ def map_selection(player_planet_num):
     # fon = pygame.transform.scale(load_image('space.png'), (WIDTH, HEIGHT))
 
     screen.blit(fon, (0, 0))
+    is_open_inventory = False
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
@@ -644,6 +645,8 @@ def map_selection(player_planet_num):
                 if event.key == pygame.K_l:
                     PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
                         'last_save.txt')
+                if event.key == pygame.K_i:
+                    is_open_inventory = not is_open_inventory
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
@@ -651,8 +654,9 @@ def map_selection(player_planet_num):
             if planet.player_here:
                 pygame.draw.circle(screen, (0, 255, 0), planet.rect.center, 10)
                 break
-        show_parameters(screen)
         blit_text(screen)
+        if is_open_inventory:
+            inventory(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -756,7 +760,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
     def change(self, offer):
         global ship_level
         if type(offer) == tuple:
-            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[offer[1]]\
+            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[offer[1]] \
                     <= upgrades[ship_level]['грузоподъёмность']:
                 have[offer[1]] -= offer[3]
                 have[offer[0]] += offer[2]
@@ -866,43 +870,33 @@ def inventory(screen):
     window_h = 600
 
     buttons = []
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return
+    screen.fill((0, 0, 0))
 
-        screen.fill((0, 0, 0))
+    all_sprites.update()
+    all_sprites.draw(screen)
+    blit_text(screen)
 
-        all_sprites.update()
-        all_sprites.draw(screen)
-        blit_text(screen)
+    shadow = pygame.Surface([WIDTH, HEIGHT])
+    shadow.fill((0, 0, 0))
+    shadow.set_alpha(164)
+    screen.blit(shadow, (0, 0))
 
-        shadow = pygame.Surface([WIDTH, HEIGHT])
-        shadow.fill((0, 0, 0))
-        shadow.set_alpha(164)
-        screen.blit(shadow, (0, 0))
+    pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2 - 200, 0), (window_w, window_h)))
 
-        pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2 - 200, 0), (window_w, window_h)))
-
-        k1, w = draw_text((WIDTH - window_w) // 2 - 200 + 10, 10,
-                         f"Инвентарь",
-                         (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128), width=300)
-        k = k1
-        iss = True
-        for i, offer in enumerate(goods):
-            if i > 4 and iss:
-                k = k1
-                iss = False
-            screen.blit(pictures_of_goods[offer], ((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k))
-            k += 71 + 5
-            k, w = draw_text((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k,
-                             f"{have[offer]}",
-                             (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128), width=71)
-        pygame.display.flip()
-        clock.tick(FPS)
+    k1, w = draw_text((WIDTH - window_w) // 2 - 200 + 10, 10,
+                      f"Инвентарь",
+                      (255, 255, 255), screen, 50, line_size=20, fon_color=(128, 128, 128), width=300)
+    k = k1
+    iss = True
+    for i, offer in enumerate(goods):
+        if i > 4 and iss:
+            k = k1
+            iss = False
+        screen.blit(pictures_of_goods[offer], ((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k))
+        k += 71 + 5
+        k, w = draw_text((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k,
+                         f"{have[offer]}",
+                         (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128), width=71)
 
 
 '''pictures_of_goods = {
@@ -918,7 +912,7 @@ def inventory(screen):
 }'''
 
 
-def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None):
+def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None, width=None, min_lines=None):
     Font = pygame.font.Font(None, font)
     message_top = y
     text_top = y
@@ -1066,6 +1060,7 @@ def planet_game(num):
     global level_x, level_y
     player, level_x, level_y = generate_level(planet, PLANET_TYPE[num])
     camera = Camera()
+    is_open_inventory = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1074,7 +1069,7 @@ def planet_game(num):
                 return
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_i:
-                    inventory(screen)
+                    is_open_inventory = not is_open_inventory
                 elif event.key == pygame.K_RIGHT:
                     player.move(tile_width, 0)
                     show_action(player)
@@ -1115,6 +1110,8 @@ def planet_game(num):
         player_group.draw(screen)
         particles_sprites.update()
         particles_sprites.draw(screen)
+        if is_open_inventory:
+            inventory(screen)
         blit_text(screen)
         pygame.display.flip()
         clock.tick(FPS)
@@ -1156,11 +1153,14 @@ def flight_game(level_max, speed, fly_away=True):
             Garbage((WIDTH, randint(20 - 10 * big, HEIGHT - 110 * (1 + big))), big=big)
         # При увеличении порога level время растёт по закону 7.32 * level - 0.04 (в секундах)
         if level >= level_max:
-            level = 0
-            ratio += 0.5
+            if ratio != -1:
+                level = 0
+                ratio += 0.5
             if ratio >= FPS / 25:
                 ratio = -1
+                level = level_max
             if len(garbage_group) == 0 and ratio == -1:
+                print(11)
                 if ship_level < 10:
                     for sprite in all_sprites:
                         sprite.kill()
@@ -1211,13 +1211,23 @@ def flight_game(level_max, speed, fly_away=True):
         clock.tick(FPS)
 
 
+def draw(screen, count):
+    screen.fill((0, 0, 0))
+    for _ in range(count):
+        pygame.draw.circle(screen, (255, 255, 255), (randint(0, WIDTH), randint(0, HEIGHT)), 1, 0)
+
+
 def do_titres():
     particles = []
-    time = 1
+    time = 399
+    ising = True
+    ising_2 = True
+    iss = True
     white = 0
     do_white = False
     while True:
-        time += 1
+        if iss:
+            time += 5 - 105 * (do_white)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -1230,13 +1240,13 @@ def do_titres():
                 if event.key == pygame.K_c:
                     iss = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == pygame.BUTTON_LEFT:
+                if event.button == pygame.BUTTON_LEFT and iss:
                     player.move()
         screen.fill((0, 0, 0))
 
         # Астероиды
         i = 0
-        while i < len(particles):
+        while i < len(particles) and iss:
             p = particles[i]
             if p.alive == -1:
                 particles.pop(i)
@@ -1250,28 +1260,147 @@ def do_titres():
             for _ in range(max(min(time // 100, 5), 3)):
                 Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                          [star_picture],
-                         (max(-1 * (max(time // 100, 1)), -4), 0), dokill=False, groups=(stars_sprites, all_sprites))
+                         (max(-1 * (max(time // 100, 1)), -4), 0), do_kill=False, groups=(stars_sprites, all_sprites))
         if time >= 400:
-            text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях. Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость...............................Достигнута III сверхсветовая скорость.....................................................................................Вы прошли игру.'
+            # Авторы сценария
+            # Кир Булычев,
+            # Павел Арсенов.
+            # Режиссер-постановщик
+            # Павел Арсенов.
+            # Главные операторы
+            # Сергей Онуфриев,
+            # Сергей Ткаченко.
+            # Художник-постановщик
+            # Ольга Кравченя.
+            # Композитор
+            # Евгений Крылатов.
+            # Песня на стихи Юрия Энтина.
+            # Редактор
+            # Андрей Иванов.
+            # Режиссер
+            # Ольга Гусакова.
+            # Монтажер
+            # Татьяна Малявина.
+            # Звукооператор
+            # Леонид Вейтков.
+            # Музыкальный редактор
+            # Наталья Строева.
+            # Художник-гример
+            # Татьяна Колосова.
+            # Государственный
+            # симфонический оркестр
+            # кинематографии СССР.
+            # Дирижер
+            # Сергей Скрипка.
+            # Художник по костюмам
+            # Валентина Олоновская.
+            # Операторы
+            # А. Лысых, Э.Тафель.
+            # Художник декоратор
+            # Н.Кириллин.
+            # Комбинированные съемки:
+            # оператор Ю.Иванов;
+            # художники
+            # В.Ребров, В.Мазохин;
+            # ассистент оператора
+            # К.Бутырин.
+            # Ассистенты:
+            # режиссера: В.Линд,
+            # Т.Зотова, М.Зайцева;
+            # художника В.Федоров;
+            # художника по костюмам Н.Писемская;
+            # звукооператора Т.Рыжкова;
+            # по монтажу: Т.Хлебтикова,
+            # В.Степанова, Н.Мальтина.
+            # Художник-фотограф
+            # А.Кокорева.
+            # Гример
+            # И.Трофимова.
+            # Мастер по свету
+            # Ю.Давыдов.
+            # Цветоустановщики:
+            # В.Россихин, В.Ерофеев.
+            # Административная группа:
+            # И.Авдеева, В.Куклин,
+            # И.Шолохов, Е.Весник.
+            # Директор съемочной группы
+            # Георгий Федянин.
+            # В главных ролях:
+            # Алиса Селезнева - Наташа Гусева;
+            # Коля Герасимов - Алеша Фомкин;
+            # Юля Грибкова - Марьяна Ионесян;
+            # Фима Королев - Илюша Наумов;
+            # космические пираты:
+            # Весельчак У - Вячеслав Невинный,
+            # Крыс - Михаил Кононов.
+            # В ролях:
+            # Алик Борисович - Георгий Бурков;
+            # робот Вертер - Евгений Герасимов;
+            # Мария Павловна - Валентина Талызина;
+            # Марта Эрастовна - Наталья Варлей;
+            # Полина - Елена Метелкина;
+            # дед Павел - Владимир Носик;
+            # профессор Селезнев - Юрий Григорьев;
+            # Шурочка - Мария Стерникова;
+            # Ишутин - Андрей Градов;
+            # бабушка Юли - Людмила Аринина;
+            # Эдуард - Вячеслав Баранов;
+            # мама Коли - Татьяна Божок;
+            # Алла Сергеевна - Екатерина Васильева;
+            # Электрон Иванович - Игорь Ясулович;
+            # Иван Сергеевич - Борис Щербаков;
+            # Мария - Елена Цыплакова;
+            # Гоги - Рубен Симонов;
+            # ученики 6 «В» класса:
+            # Коля Сулима - Антон Суховерко,
+            # Коля Садовский - Семен Бузган,
+            # Боря Мессерер - Алеша Муравьев,
+            # Мила Руткевич - Катя Авербах,
+            # Катя Михайлова - Лена Коляскина,
+            # Альбина Фетисова - Маша Баукина,
+            # Лена Домбазова - Наташа Шанаева.
+            # В эпизодах:
+            # М.Скворцова, С.Харитонова,
+            # А.Лысых, С.Рощинец,
+            # В.Мухамедов,
+            # Юля Русских, Лена Перова,
+            # Андрюша Жиров, Миша Хлесткин,
+            # Андрюша Ануфриев, Инна Чуркина,
+            # Таня Полосухина, Володя Харитонов,
+            # Алеша Ануфриев, Владик Пиротский.
+            # Группа каскадеров
+            # под руководством О.Корытина:
+            # А.Грошевой, С.Григорьев,
+            # К.Кищук, Н.Сысоев,
+            # О.Федулов, А.Тамсаар,
+            # Оксана Компаниец.
+            # Фильм снят на кинопленке
+            # Шосткинского п/о «Свема» и Казанского п/о «Тасма».
+            text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях.' \
+                   ' Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость' \
+                   '...............................Достигнута III сверхсветовая скорость.........................' \
+                   '............................................................Вы прошли игру.'
+            if time == 0:
+                draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
+                          text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
             draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
                       text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
             print(time)
 
-        if time == 3500:
-            Garbage((WIDTH, 0), last=True)
+        if time >= 3500 and ising_2:
+            Garbage((WIDTH, -20), last=True)
+            ising_2 = False
 
         for g in garbage_group:
             if pygame.sprite.collide_mask(player, g):
                 do_white = True
 
         if do_white:
-            white = max(white + 1, 255 ** 2)
-            image = pygame.Surface(
-                [WIDTH, HEIGHT])
-            image.fill((255, 255, 255))
-            image.set_alpha(white // 255)
-            screen.blit(image, (0, 0))
-        else:
+            if ising:
+                time = 500000
+                ising = False
+            draw(screen, time)
+        elif iss:
             all_sprites.update()
             stars_sprites.draw(screen)
             player_group.draw(screen)
