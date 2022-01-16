@@ -1397,7 +1397,7 @@ def do_titres():
 
         if do_white:
             if ising:
-                time = 500000
+                time = 400000
                 ising = False
             draw(screen, time)
         elif iss:
