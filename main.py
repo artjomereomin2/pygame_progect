@@ -127,7 +127,7 @@ text_frame = load_image('textframe.png', color_key_list=[-1])
 
 merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures of merchants
 
-mystery_merchants_images = [load_image('merchant.png', [-1], rotate=90)]
+mystery_merchants_images = [load_image('strange_merchant.png', [-1])]
 
 # TODO make cool planet images
 planet_images = []
@@ -694,6 +694,7 @@ def generate_level(level, level_type):
                 Tile('s', x, y)
             elif level[y][x] == 'l':
                 Tile('l', x, y)
+                Tile('.', x, y)
             elif level[y][x][0] == '=':
                 Tile(level[y][x], x, y)
                 if MERCHANTS[int(level[y][x][1:])]['last trade'] is not None and datetime.datetime.now() - \
