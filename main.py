@@ -62,17 +62,17 @@ expensive = {
     'FIRE': ['FOOD', 'WATER'],
     'DESERT': ['FOOD', 'WATER'],
     'MOUNTAIN': ['FOOD', 'ARTJOMEUM', 'PETROLEUM'],
-    'ICE': ['FUEL', 'OIL']
+    'WATER': ['FUEL', 'OIL']
 }
 cheap = {
     'GREEN': ['WATER', 'FOOD'],
     'FIRE': ['GOLD', 'PLUTONIUM', 'FUEL'],
     'DESERT': ['FUEL', 'OIL', 'PETROLEUM'],
     'MOUNTAIN': ['GOLD', 'IRON'],
-    'ICE': ['WATER', 'ARTJOMEUM']
+    'WATER': ['WATER', 'ARTJOMEUM']
 }
 COSTS = {}
-for planet_type in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'ICE']:
+for planet_type in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER']:
     COSTS[planet_type] = DEFAULT_GOODS_COSTS.copy()
     for x in expensive[planet_type]:
         COSTS[planet_type][x] *= 2
@@ -130,7 +130,10 @@ merchants_images = [load_image('merchant.png', [-1])]  # TODO make many pictures
 mystery_merchants_images = [load_image('merchant.png', [-1], rotate=90)]
 
 # TODO make cool planet images
-planet_images = [load_image('garbage.png', rotate=i, color_key_list=[-1]) for i in range(0, 180, 30)]
+planet_images = []
+for i in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER']:
+    planet_images.append(load_image(f'{i.lower()}_planet.png', color_key_list=[-1]))
+
 
 player_x, player_y = None, None
 
@@ -264,7 +267,7 @@ def planet_generator(n, w, h):
         name = generate_name(randint(3, 5))
         name += str(randint(10, 99))
         PLANET_NAMES.append(name.upper())
-        PLANET_TYPE.append(['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'ICE'][randint(0, 4)])
+        PLANET_TYPE.append(['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER'][randint(0, 4)])
 
     staring_zone = arr_from_str(
         '# # # # # # # # #\n'
@@ -559,9 +562,10 @@ def calculate_distance(x1, y1, x2, y2):
 
 # TODO planet images
 class PlanetView(pygame.sprite.Sprite):
-    def __init__(self, pos, num, player_here=False, **other):
+    def __init__(self, pos, num, planet_type, player_here=False, **other):
         super().__init__(planets)
-        self.image = pygame.transform.scale(planet_images[0], (100, 100))
+        self.image = pygame.transform.scale(
+            planet_images[['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER'].index(planet_type)], (100, 100))
         self.rect = self.image.get_rect()
         self.num = num
         self.rect.x, self.rect.y = pos[0], pos[1]
@@ -571,7 +575,6 @@ class PlanetView(pygame.sprite.Sprite):
 def map_selection(player_planet_num):
     global player_planet, PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     player_planet = player_planet_num
-    # TODO find space.png for background
     fon = pygame.Surface([WIDTH, HEIGHT])
     fon.fill((0, 0, 0))
     screen.blit(fon, (0, 0))
@@ -582,10 +585,12 @@ def map_selection(player_planet_num):
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
-            PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=True)
+            PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=True,
+                       planet_type=PLANET_TYPE[i])
         else:
             while True:
-                self = PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=False)
+                self = PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=False,
+                                  planet_type=PLANET_TYPE[i])
                 for sprite in planets:
                     if self is not sprite:
                         if pygame.sprite.collide_rect(self, sprite):
@@ -637,6 +642,10 @@ def map_selection(player_planet_num):
                                     have['FUEL'] -= wasted_fuel
                                 else:
                                     planet = random.choice(list(planets))
+                                    ship_level = 0
+                                    for i in range(len(goods)):
+                                        have[goods[i].upper()] = have[goods[i].upper()] // (
+                                                1 + weight[goods[i].upper()])
                                 planet.player_here = True
                                 player_planet = planet.num
                             save('last_save.txt')
@@ -1166,7 +1175,7 @@ def flight_game(level_max, speed, fly_away=True):
                         sprite.kill()
                     return True
                 elif fly_away:
-                    do_titres()
+                    do_titres(particles)
         i = 0
         while i < len(particles) and iss:
             p = particles[i]
@@ -1217,8 +1226,7 @@ def draw(screen, count):
         pygame.draw.circle(screen, (255, 255, 255), (randint(0, WIDTH), randint(0, HEIGHT)), 1, 0)
 
 
-def do_titres():
-    particles = []
+def do_titres(particles):
     time = 399
     ising = True
     ising_2 = True
@@ -1227,7 +1235,7 @@ def do_titres():
     do_white = False
     while True:
         if iss:
-            time += 5 - 105 * (do_white)
+            time += (5 - 1005 * (do_white)) * (time != 0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -1261,191 +1269,162 @@ def do_titres():
                 Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                          [star_picture],
                          (max(-1 * (max(time // 100, 1)), -4), 0), do_kill=False, groups=(stars_sprites, all_sprites))
-        if time >= 400:
-            # Авторы сценария
-            # Кир Булычев,
-            # Павел Арсенов.
-            # Режиссер-постановщик
-            # Павел Арсенов.
-            # Главные операторы
-            # Сергей Онуфриев,
-            # Сергей Ткаченко.
-            # Художник-постановщик
-            # Ольга Кравченя.
-            # Композитор
-            # Евгений Крылатов.
-            # Песня на стихи Юрия Энтина.
-            # Редактор
-            # Андрей Иванов.
-            # Режиссер
-            # Ольга Гусакова.
-            # Монтажер
-            # Татьяна Малявина.
-            # Звукооператор
-            # Леонид Вейтков.
-            # Музыкальный редактор
-            # Наталья Строева.
-            # Художник-гример
-            # Татьяна Колосова.
-            # Государственный
-            # симфонический оркестр
-            # кинематографии СССР.
-            # Дирижер
-            # Сергей Скрипка.
-            # Художник по костюмам
-            # Валентина Олоновская.
-            # Операторы
-            # А. Лысых, Э.Тафель.
-            # Художник декоратор
-            # Н.Кириллин.
-            # Комбинированные съемки:
-            # оператор Ю.Иванов;
-            # художники
-            # В.Ребров, В.Мазохин;
-            # ассистент оператора
-            # К.Бутырин.
-            # Ассистенты:
-            # режиссера: В.Линд,
-            # Т.Зотова, М.Зайцева;
-            # художника В.Федоров;
-            # художника по костюмам Н.Писемская;
-            # звукооператора Т.Рыжкова;
-            # по монтажу: Т.Хлебтикова,
-            # В.Степанова, Н.Мальтина.
-            # Художник-фотограф
-            # А.Кокорева.
-            # Гример
-            # И.Трофимова.
-            # Мастер по свету
-            # Ю.Давыдов.
-            # Цветоустановщики:
-            # В.Россихин, В.Ерофеев.
-            # Административная группа:
-            # И.Авдеева, В.Куклин,
-            # И.Шолохов, Е.Весник.
-            # Директор съемочной группы
-            # Георгий Федянин.
-            # В главных ролях:
-            # Алиса Селезнева - Наташа Гусева;
-            # Коля Герасимов - Алеша Фомкин;
-            # Юля Грибкова - Марьяна Ионесян;
-            # Фима Королев - Илюша Наумов;
-            # космические пираты:
-            # Весельчак У - Вячеслав Невинный,
-            # Крыс - Михаил Кононов.
-            # В ролях:
-            # Алик Борисович - Георгий Бурков;
-            # робот Вертер - Евгений Герасимов;
-            # Мария Павловна - Валентина Талызина;
-            # Марта Эрастовна - Наталья Варлей;
-            # Полина - Елена Метелкина;
-            # дед Павел - Владимир Носик;
-            # профессор Селезнев - Юрий Григорьев;
-            # Шурочка - Мария Стерникова;
-            # Ишутин - Андрей Градов;
-            # бабушка Юли - Людмила Аринина;
-            # Эдуард - Вячеслав Баранов;
-            # мама Коли - Татьяна Божок;
-            # Алла Сергеевна - Екатерина Васильева;
-            # Электрон Иванович - Игорь Ясулович;
-            # Иван Сергеевич - Борис Щербаков;
-            # Мария - Елена Цыплакова;
-            # Гоги - Рубен Симонов;
-            # ученики 6 «В» класса:
-            # Коля Сулима - Антон Суховерко,
-            # Коля Садовский - Семен Бузган,
-            # Боря Мессерер - Алеша Муравьев,
-            # Мила Руткевич - Катя Авербах,
-            # Катя Михайлова - Лена Коляскина,
-            # Альбина Фетисова - Маша Баукина,
-            # Лена Домбазова - Наташа Шанаева.
-            # В эпизодах:
-            # М.Скворцова, С.Харитонова,
-            # А.Лысых, С.Рощинец,
-            # В.Мухамедов,
-            # Юля Русских, Лена Перова,
-            # Андрюша Жиров, Миша Хлесткин,
-            # Андрюша Ануфриев, Инна Чуркина,
-            # Таня Полосухина, Володя Харитонов,
-            # Алеша Ануфриев, Владик Пиротский.
-            # Группа каскадеров
-            # под руководством О.Корытина:
-            # А.Грошевой, С.Григорьев,
-            # К.Кищук, Н.Сысоев,
-            # О.Федулов, А.Тамсаар,
-            # Оксана Компаниец.
-            # Фильм снят на кинопленке
-            # Шосткинского п/о «Свема» и Казанского п/о «Тасма».
-            text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях.' \
-                   ' Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость' \
-                   '...............................Достигнута III сверхсветовая скорость.........................' \
-                   '............................................................Вы прошли игру.'
-            if time == 0:
-                draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
-                          text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
-            draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
-                      text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
-            print(time)
+        # Авторы сценария
+        # Кир Булычев,
+        # Павел Арсенов.
+        # Режиссер-постановщик
+        # Павел Арсенов.
+        # Главные операторы
+        # Сергей Онуфриев,
+        # Сергей Ткаченко.
+        # Художник-постановщик
+        # Ольга Кравченя.
+        # Композитор
+        # Евгений Крылатов.
+        # Песня на стихи Юрия Энтина.
+        # Редактор
+        # Андрей Иванов.
+        # Режиссер
+        # Ольга Гусакова.
+        # Монтажер
+        # Татьяна Малявина.
+        # Звукооператор
+        # Леонид Вейтков.
+        # Музыкальный редактор
+        # Наталья Строева.
+        # Художник-гример
+        # Татьяна Колосова.
+        # Государственный
+        # симфонический оркестр
+        # кинематографии СССР.
+        # Дирижер
+        # Сергей Скрипка.
+        # Художник по костюмам
+        # Валентина Олоновская.
+        # Операторы
+        # А. Лысых, Э.Тафель.
+        # Художник декоратор
+        # Н.Кириллин.
+        # Комбинированные съемки:
+        # оператор Ю.Иванов;
+        # художники
+        # В.Ребров, В.Мазохин;
+        # ассистент оператора
+        # К.Бутырин.
+        # Ассистенты:
+        # режиссера: В.Линд,
+        # Т.Зотова, М.Зайцева;
+        # художника В.Федоров;
+        # художника по костюмам Н.Писемская;
+        # звукооператора Т.Рыжкова;
+        # по монтажу: Т.Хлебтикова,
+        # В.Степанова, Н.Мальтина.
+        # Художник-фотограф
+        # А.Кокорева.
+        # Гример
+        # И.Трофимова.
+        # Мастер по свету
+        # Ю.Давыдов.
+        # Цветоустановщики:
+        # В.Россихин, В.Ерофеев.
+        # Административная группа:
+        # И.Авдеева, В.Куклин,
+        # И.Шолохов, Е.Весник.
+        # Директор съемочной группы
+        # Георгий Федянин.
+        # В главных ролях:
+        # Алиса Селезнева - Наташа Гусева;
+        # Коля Герасимов - Алеша Фомкин;
+        # Юля Грибкова - Марьяна Ионесян;
+        # Фима Королев - Илюша Наумов;
+        # космические пираты:
+        # Весельчак У - Вячеслав Невинный,
+        # Крыс - Михаил Кононов.
+        # В ролях:
+        # Алик Борисович - Георгий Бурков;
+        # робот Вертер - Евгений Герасимов;
+        # Мария Павловна - Валентина Талызина;
+        # Марта Эрастовна - Наталья Варлей;
+        # Полина - Елена Метелкина;
+        # дед Павел - Владимир Носик;
+        # профессор Селезнев - Юрий Григорьев;
+        # Шурочка - Мария Стерникова;
+        # Ишутин - Андрей Градов;
+        # бабушка Юли - Людмила Аринина;
+        # Эдуард - Вячеслав Баранов;
+        # мама Коли - Татьяна Божок;
+        # Алла Сергеевна - Екатерина Васильева;
+        # Электрон Иванович - Игорь Ясулович;
+        # Иван Сергеевич - Борис Щербаков;
+        # Мария - Елена Цыплакова;
+        # Гоги - Рубен Симонов;
+        # ученики 6 «В» класса:
+        # Коля Сулима - Антон Суховерко,
+        # Коля Садовский - Семен Бузган,
+        # Боря Мессерер - Алеша Муравьев,
+        # Мила Руткевич - Катя Авербах,
+        # Катя Михайлова - Лена Коляскина,
+        # Альбина Фетисова - Маша Баукина,
+        # Лена Домбазова - Наташа Шанаева.
+        # В эпизодах:
+        # М.Скворцова, С.Харитонова,
+        # А.Лысых, С.Рощинец,
+        # В.Мухамедов,
+        # Юля Русских, Лена Перова,
+        # Андрюша Жиров, Миша Хлесткин,
+        # Андрюша Ануфриев, Инна Чуркина,
+        # Таня Полосухина, Володя Харитонов,
+        # Алеша Ануфриев, Владик Пиротский.
+        # Группа каскадеров
+        # под руководством О.Корытина:
+        # А.Грошевой, С.Григорьев,
+        # К.Кищук, Н.Сысоев,
+        # О.Федулов, А.Тамсаар,
+        # Оксана Компаниец.
+        # Фильм снят на кинопленке
+        # Шосткинского п/о «Свема» и Казанского п/о «Тасма».
+
+        if do_white and time != 0:
+            if ising:
+                time = 250000
+                ising = False
+            draw(screen, time)
+        text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях.' \
+               ' Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость' \
+               '...............................Достигнута III сверхсветовая скорость.........................' \
+               '............................................................Вы прошли игру.'
+        if time == 0:
+            draw_text(0, HEIGHT // 2,
+                      'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
+        draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
+                  text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
+        print(time)
 
         if time >= 3500 and ising_2:
             Garbage((WIDTH, -20), last=True)
             ising_2 = False
 
+        while i < len(particles) and iss and not do_white:
+            p = particles[i]
+            if p.alive == -1:
+                particles.pop(i)
+            else:
+                p.update()
+                i += 1
+
         for g in garbage_group:
             if pygame.sprite.collide_mask(player, g):
                 do_white = True
-
-        if do_white:
-            if ising:
-                time = 400000
-                ising = False
-            draw(screen, time)
-        elif iss:
+        if iss and not do_white:
             all_sprites.update()
             stars_sprites.draw(screen)
             player_group.draw(screen)
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
         pygame.display.flip()
+        print(clock.tick())
         clock.tick(FPS)
 
-
-def end_screen(time):
-    intro_text = [f"Ваш счёт: {time}", "Нажмите что-нибудь, чтобы продолжить"]
-
-    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 300
-    mx_right = 0
-    for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color(239, 239, 239))
-        intro_rect = string_rendered.get_rect()
-        mx_right = max(mx_right, intro_rect.x)
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
-    image = pygame.Surface([WIDTH, text_coord - 200])
-    image.fill((0, 0, 0))
-    image.set_alpha(50)
-    screen.blit(image, (0, 300))
-    timer = 0
-
-    while True:
-        timer += clock.tick() + 1
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and timer >= 100:
-                return main_game(20)
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-# do not need this
 
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, groups, sheet, columns, rows, x, y, scale_to=None, switch=lambda x: True):
