@@ -602,6 +602,8 @@ def map_selection(player_planet_num):
 
     screen.blit(fon, (0, 0))
     is_open_inventory = False
+
+    planet_selected = None
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
@@ -632,43 +634,24 @@ def map_selection(player_planet_num):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 for planet in planets:
                     if planet.rect.collidepoint(*event.pos):
-                        save('last_save.txt')
+                        # save('last_save.txt')
                         if planet.player_here:
-                            planet_game(planet.num)
-                            save('last_save.txt')
+                            planet_selected = planet
+                            send_message(f'Приземлиться хочешь, Enter жми')
+                            # planet_game(planet.num)
+                            # save('last_save.txt')
                         else:
                             # TODO check if player is sure
-
                             now_planet = None
                             for now_planet in planets:
                                 if now_planet.player_here:
                                     break
-                            wasted_fuel = calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
+                            planet_selected = planet
+                            wasted_fuel = int(calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
                                                              int(planet.rect.centerx),
                                                              int(planet.rect.centery)) / upgrades[ship_level][
-                                              'КПД двигателя']
-                            if wasted_fuel > have['FUEL']:
-                                send_message('Недостаточно топлива.')
-                            else:
-                                res = flight_game(
-                                    calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
-                                                       int(planet.rect.centerx),
-                                                       int(planet.rect.centery)) // 2, upgrades[ship_level]['скорость'])
-                                for start_planet in planets:
-                                    if start_planet.player_here:
-                                        start_planet.player_here = False
-                                        break
-                                if res:
-                                    have['FUEL'] -= wasted_fuel
-                                else:
-                                    planet = random.choice(list(planets))
-                                    ship_level = ship_level // randint(2, 10)
-                                    for i in range(len(goods)):
-                                        have[goods[i].upper()] = have[goods[i].upper()] // (
-                                                1 + weight[goods[i].upper()])
-                                planet.player_here = True
-                                player_planet = planet.num
-                            save('last_save.txt')
+                                              'КПД двигателя'])
+                            send_message(f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. {num_repr(wasted_fuel)} топлива надо.')
                             break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
@@ -676,6 +659,44 @@ def map_selection(player_planet_num):
                         'last_save.txt')
                 if event.key == pygame.K_i:
                     is_open_inventory = not is_open_inventory
+                if event.key == pygame.K_RETURN:
+                    if planet_selected is None:
+                        send_message('Вы не выбрали планету')
+                    elif planet_selected.player_here:
+                        save('last_save.txt')
+                        planet_game(planet_selected.num)
+                        save('last_save.txt')
+                    else:
+                        save('lase_save.txt')
+                        if wasted_fuel > have['FUEL']:
+                            send_message('Недостаточно топлива.')
+                        else:
+                            now_planet = None
+                            for now_planet in planets:
+                                if now_planet.player_here:
+                                    break
+                            res = flight_game(
+                                calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
+                                                   int(planet_selected.rect.centerx),
+                                                   int(planet_selected.rect.centery)) // 2, upgrades[ship_level]['скорость'])
+                            for start_planet in planets:
+                                if start_planet.player_here:
+                                    start_planet.player_here = False
+                                    break
+                            if res:
+                                have['FUEL'] -= wasted_fuel
+                                planet_selected.player_here = True
+                                player_planet = planet_selected.num
+                            else:
+                                planet = random.choice(list(planets))
+                                ship_level = ship_level // randint(2, 10)
+                                for i in range(len(goods)):
+                                    have[goods[i].upper()] = have[goods[i].upper()] // (
+                                            1 + weight[goods[i].upper()])
+                                planet.player_here = True
+                                player_planet = planet.num
+                        save('last_save.txt')
+
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
