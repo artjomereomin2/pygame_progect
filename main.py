@@ -134,7 +134,6 @@ planet_images = []
 for i in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER']:
     planet_images.append(load_image(f'{i.lower()}_planet.png', color_key_list=[-1]))
 
-
 player_x, player_y = None, None
 
 tile_images = {
@@ -154,6 +153,8 @@ upgrade_image = load_image('upgrade.png', size=(65, 65))
 
 star_red_picture = load_image('star_red.png', [-1], size=(10, 10))
 star_blue_picture = load_image('star_blue.png', [-1], size=(10, 10))
+
+here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 
 # TODO ask if anyone understand what is happening over here
@@ -243,7 +244,25 @@ def gcd(a, b):
 
 def optimize(a, b):
     d = gcd(a, b)
-    return a // d, b // d
+    a = a // d
+    b = b // d
+    if a >= 1000:
+        a -= a % 1000
+    if a >= 1000000:
+        a -= a % 1000000
+    if b >= 1000:
+        b -= b % 1000
+    if b >= 1000000:
+        b -= b % 1000000
+    return a, b
+
+
+def num_repr(x):
+    if x >= 1000 * 1000:
+        return f'{x // 1000000}M'
+    if x >= 1000:
+        return f'{x // 1000}K'
+    return x
 
 
 def generate_merchant(planet_type):
@@ -575,6 +594,7 @@ class PlanetView(pygame.sprite.Sprite):
 def map_selection(player_planet_num):
     global player_planet, PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
     player_planet = player_planet_num
+    # TODO find space.png for background
     fon = pygame.Surface([WIDTH, HEIGHT])
     fon.fill((0, 0, 0))
     screen.blit(fon, (0, 0))
@@ -582,6 +602,8 @@ def map_selection(player_planet_num):
 
     screen.blit(fon, (0, 0))
     is_open_inventory = False
+
+    planet_selected = None
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
@@ -612,43 +634,24 @@ def map_selection(player_planet_num):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 for planet in planets:
                     if planet.rect.collidepoint(*event.pos):
-                        save('last_save.txt')
+                        # save('last_save.txt')
                         if planet.player_here:
-                            planet_game(planet.num)
-                            save('last_save.txt')
+                            planet_selected = planet
+                            send_message(f'Приземлиться хочешь, Enter жми')
+                            # planet_game(planet.num)
+                            # save('last_save.txt')
                         else:
                             # TODO check if player is sure
-
                             now_planet = None
                             for now_planet in planets:
                                 if now_planet.player_here:
                                     break
-                            wasted_fuel = calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
+                            planet_selected = planet
+                            wasted_fuel = int(calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
                                                              int(planet.rect.centerx),
                                                              int(planet.rect.centery)) / upgrades[ship_level][
-                                              'КПД двигателя']
-                            if wasted_fuel > have['FUEL']:
-                                send_message('Недостаточно топлива.')
-                            else:
-                                res = flight_game(
-                                    calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
-                                                       int(planet.rect.centerx),
-                                                       int(planet.rect.centery)) // 2, upgrades[ship_level]['скорость'])
-                                for start_planet in planets:
-                                    if start_planet.player_here:
-                                        start_planet.player_here = False
-                                        break
-                                if res:
-                                    have['FUEL'] -= wasted_fuel
-                                else:
-                                    planet = random.choice(list(planets))
-                                    ship_level = 0
-                                    for i in range(len(goods)):
-                                        have[goods[i].upper()] = have[goods[i].upper()] // (
-                                                1 + weight[goods[i].upper()])
-                                planet.player_here = True
-                                player_planet = planet.num
-                            save('last_save.txt')
+                                              'КПД двигателя'])
+                            send_message(f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. {num_repr(wasted_fuel)} топлива надо.')
                             break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
@@ -656,12 +659,50 @@ def map_selection(player_planet_num):
                         'last_save.txt')
                 if event.key == pygame.K_i:
                     is_open_inventory = not is_open_inventory
+                if event.key == pygame.K_RETURN:
+                    if planet_selected is None:
+                        send_message('Вы не выбрали планету')
+                    elif planet_selected.player_here:
+                        save('last_save.txt')
+                        planet_game(planet_selected.num)
+                        save('last_save.txt')
+                    else:
+                        save('lase_save.txt')
+                        if wasted_fuel > have['FUEL']:
+                            send_message('Недостаточно топлива.')
+                        else:
+                            now_planet = None
+                            for now_planet in planets:
+                                if now_planet.player_here:
+                                    break
+                            res = flight_game(
+                                calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
+                                                   int(planet_selected.rect.centerx),
+                                                   int(planet_selected.rect.centery)) // 2, upgrades[ship_level]['скорость'])
+                            for start_planet in planets:
+                                if start_planet.player_here:
+                                    start_planet.player_here = False
+                                    break
+                            if res:
+                                have['FUEL'] -= wasted_fuel
+                                planet_selected.player_here = True
+                                player_planet = planet_selected.num
+                            else:
+                                planet = random.choice(list(planets))
+                                ship_level = ship_level // randint(2, 10)
+                                for i in range(len(goods)):
+                                    have[goods[i].upper()] = have[goods[i].upper()] // (
+                                            1 + weight[goods[i].upper()])
+                                planet.player_here = True
+                                player_planet = planet.num
+                        save('last_save.txt')
+
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
         for planet in planets:
             if planet.player_here:
-                pygame.draw.circle(screen, (0, 255, 0), planet.rect.center, 10)
+                screen.blit(here_sigh, (planet.rect.centerx - 25, planet.rect.centery - 90))
                 break
         blit_text(screen)
         if is_open_inventory:
@@ -879,7 +920,6 @@ def inventory(screen):
     window_w = 320
     window_h = 600
 
-    buttons = []
     screen.fill((0, 0, 0))
 
     all_sprites.update()
@@ -905,7 +945,7 @@ def inventory(screen):
         screen.blit(pictures_of_goods[offer], ((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k))
         k += 71 + 5
         k, w = draw_text((WIDTH - window_w) // 2 - 200 + 10 + 86 * (i > 4), k,
-                         f"{have[offer]}",
+                         f"{num_repr(have[offer])}",
                          (255, 255, 255), screen, 30, line_size=20, fon_color=(128, 128, 128), width=71)
 
 
@@ -979,7 +1019,7 @@ def trade_game(screen, merchant, player):
             screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
             button = [(WIDTH - window_w) // 2 + 90, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                             f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                             f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
                              (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
             button.append(w)
             button.append(k - button[1])
@@ -1025,13 +1065,14 @@ def trade_game(screen, merchant, player):
         player_group.draw(screen)
         particles_sprites.update()
         particles_sprites.draw(screen)
-        inventory(screen)
         blit_text(screen)
 
         shadow = pygame.Surface([WIDTH, HEIGHT])
         shadow.fill((0, 0, 0))
         shadow.set_alpha(164)
         screen.blit(shadow, (0, 0))
+
+        inventory(screen)
 
         pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2 + move_right, 0), (window_w, window_h)))
 
@@ -1045,7 +1086,7 @@ def trade_game(screen, merchant, player):
                 screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10 + move_right, k))
                 screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                                 f"Мне ты давать {offer[3]} {goods_translated[goods.index(offer[1])]}, тебе давать я {offer[2]} {goods_translated[goods.index(offer[0])]}",
+                                 f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
                                  (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
                                  min_lines=3)
         else:
@@ -1270,120 +1311,6 @@ def do_titres(particles):
                 Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                          [star_picture],
                          (max(-1 * (max(time // 100, 1)), -4), 0), do_kill=False, groups=(stars_sprites, all_sprites))
-        # Авторы сценария
-        # Кир Булычев,
-        # Павел Арсенов.
-        # Режиссер-постановщик
-        # Павел Арсенов.
-        # Главные операторы
-        # Сергей Онуфриев,
-        # Сергей Ткаченко.
-        # Художник-постановщик
-        # Ольга Кравченя.
-        # Композитор
-        # Евгений Крылатов.
-        # Песня на стихи Юрия Энтина.
-        # Редактор
-        # Андрей Иванов.
-        # Режиссер
-        # Ольга Гусакова.
-        # Монтажер
-        # Татьяна Малявина.
-        # Звукооператор
-        # Леонид Вейтков.
-        # Музыкальный редактор
-        # Наталья Строева.
-        # Художник-гример
-        # Татьяна Колосова.
-        # Государственный
-        # симфонический оркестр
-        # кинематографии СССР.
-        # Дирижер
-        # Сергей Скрипка.
-        # Художник по костюмам
-        # Валентина Олоновская.
-        # Операторы
-        # А. Лысых, Э.Тафель.
-        # Художник декоратор
-        # Н.Кириллин.
-        # Комбинированные съемки:
-        # оператор Ю.Иванов;
-        # художники
-        # В.Ребров, В.Мазохин;
-        # ассистент оператора
-        # К.Бутырин.
-        # Ассистенты:
-        # режиссера: В.Линд,
-        # Т.Зотова, М.Зайцева;
-        # художника В.Федоров;
-        # художника по костюмам Н.Писемская;
-        # звукооператора Т.Рыжкова;
-        # по монтажу: Т.Хлебтикова,
-        # В.Степанова, Н.Мальтина.
-        # Художник-фотограф
-        # А.Кокорева.
-        # Гример
-        # И.Трофимова.
-        # Мастер по свету
-        # Ю.Давыдов.
-        # Цветоустановщики:
-        # В.Россихин, В.Ерофеев.
-        # Административная группа:
-        # И.Авдеева, В.Куклин,
-        # И.Шолохов, Е.Весник.
-        # Директор съемочной группы
-        # Георгий Федянин.
-        # В главных ролях:
-        # Алиса Селезнева - Наташа Гусева;
-        # Коля Герасимов - Алеша Фомкин;
-        # Юля Грибкова - Марьяна Ионесян;
-        # Фима Королев - Илюша Наумов;
-        # космические пираты:
-        # Весельчак У - Вячеслав Невинный,
-        # Крыс - Михаил Кононов.
-        # В ролях:
-        # Алик Борисович - Георгий Бурков;
-        # робот Вертер - Евгений Герасимов;
-        # Мария Павловна - Валентина Талызина;
-        # Марта Эрастовна - Наталья Варлей;
-        # Полина - Елена Метелкина;
-        # дед Павел - Владимир Носик;
-        # профессор Селезнев - Юрий Григорьев;
-        # Шурочка - Мария Стерникова;
-        # Ишутин - Андрей Градов;
-        # бабушка Юли - Людмила Аринина;
-        # Эдуард - Вячеслав Баранов;
-        # мама Коли - Татьяна Божок;
-        # Алла Сергеевна - Екатерина Васильева;
-        # Электрон Иванович - Игорь Ясулович;
-        # Иван Сергеевич - Борис Щербаков;
-        # Мария - Елена Цыплакова;
-        # Гоги - Рубен Симонов;
-        # ученики 6 «В» класса:
-        # Коля Сулима - Антон Суховерко,
-        # Коля Садовский - Семен Бузган,
-        # Боря Мессерер - Алеша Муравьев,
-        # Мила Руткевич - Катя Авербах,
-        # Катя Михайлова - Лена Коляскина,
-        # Альбина Фетисова - Маша Баукина,
-        # Лена Домбазова - Наташа Шанаева.
-        # В эпизодах:
-        # М.Скворцова, С.Харитонова,
-        # А.Лысых, С.Рощинец,
-        # В.Мухамедов,
-        # Юля Русских, Лена Перова,
-        # Андрюша Жиров, Миша Хлесткин,
-        # Андрюша Ануфриев, Инна Чуркина,
-        # Таня Полосухина, Володя Харитонов,
-        # Алеша Ануфриев, Владик Пиротский.
-        # Группа каскадеров
-        # под руководством О.Корытина:
-        # А.Грошевой, С.Григорьев,
-        # К.Кищук, Н.Сысоев,
-        # О.Федулов, А.Тамсаар,
-        # Оксана Компаниец.
-        # Фильм снят на кинопленке
-        # Шосткинского п/о «Свема» и Казанского п/о «Тасма».
 
         if do_white and time != 0:
             if ising:
@@ -1393,15 +1320,24 @@ def do_titres(particles):
         text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях.' \
                ' Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость' \
                '...............................Достигнута III сверхсветовая скорость.........................' \
-               '............................................................Вы прошли игру.'
+               '............................................................Вы прошли игру.' \
+               'Авторы сценария Артём Еретин, Пётр Пучков при участии Марии Рахмановой. Режиссёр постановщик Артём Еретин, Пётр Пучков. ' \
+               'Главные операторы Пётр Пучков, Pygame. Художник-постановщик Артём Еретин. ' \
+               'Режиссёр Пётр Пучков, Артём Еретин. Монтажёр Pygame. Художник-гримёр Артём Еретин. ' \
+               'Художник по костюмам Артём Еретин. Художник декоратор Артём Еретин. Художники Pygame, Random.randint. ' \
+               'Ассистент оператора Артём Еретин. Цветоустановщики Артём Еретин, Pygame, Random.randint. ' \
+               'Консультант по постановке спецэффектов Мария Рахманова. ' \
+               'Административная группа Артём Еретин, Пётр Пучков. В главных ролях ЯндексКартинки, Random.randint. ' \
+               'Группа каскадеров Астероиды под руководством Random.randint, Программа написана на языке Python 3.7.9 ' \
+               'с использованием библеотеки Pygame'
         if time == 0:
             draw_text(0, HEIGHT // 2,
                       'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
-        draw_text(WIDTH - (time - 400) * 2, HEIGHT // 2,
+        draw_text(WIDTH - (time - 400), HEIGHT // 2,
                   text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
         print(time)
 
-        if time >= 3500 and ising_2:
+        if time >= 19000 and ising_2:
             Garbage((WIDTH, -20), last=True)
             ising_2 = False
 
