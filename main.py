@@ -137,8 +137,16 @@ for i in ['GREEN', 'FIRE', 'DESERT', 'MOUNTAIN', 'WATER']:
 player_x, player_y = None, None
 
 tile_images = {
-    '#': load_image('box.png'),
-    '.': load_image('grass.png')
+    '#': {'GREEN': load_image('box.png'),
+          'FIRE': load_image('fire_box.png'),
+          'DESERT': load_image('desert_box.png'),
+          'MOUNTAIN': load_image('mountain_box.png'),
+          'WATER': load_image('water_box.png')},
+    '.': {'GREEN': load_image('grass.png'),
+          'FIRE': load_image('fire_grass.png'),
+          'DESERT': load_image('desert_grass.png'),
+          'MOUNTAIN': load_image('mountain_grass.png'),
+          'WATER': load_image('water_grass.png')}
 }
 
 # TODO find picture for player on planet
@@ -161,7 +169,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 0
+    ship_level = 10
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -209,8 +217,8 @@ def load(name):
 # zone of player spawning on planet
 '''
 # # # # # # # # #
-# . . . . . . . #
-# . . s . . @ . #
+# . b b b . . . #
+# . b b s . @ . #
 # . . l . . . . #
 # . . . . . . . #
 # . . . . . . . #
@@ -720,44 +728,44 @@ def generate_level(level, level_type):
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
-                Tile('.', x, y)
+                Tile('.', x, y, level_type)
             elif level[y][x] == '#':
-                Tile('#', x, y)
+                Tile('#', x, y, level_type)
             elif level[y][x] == '@':
-                Tile('.', x, y)
+                Tile('.', x, y, level_type)
                 new_player = PlayerOnPlanet(x, y)
                 player_x = x
                 player_y = y
             elif level[y][x][0] == '$':
-                Tile('.', x, y)
+                Tile('.', x, y, level_type)
                 Tile(level[y][x], x, y)
             elif level[y][x][0] == '?':
-                Tile('.', x, y)
+                Tile('.', x, y, level_type)
                 Tile(level[y][x], x, y)
             elif level[y][x] == 's':
-                Tile('#', x, y)
-                Tile('.', x, y)
+                Tile('#', x, y, level_type)
+                Tile('.', x, y, level_type)
                 Tile('s', x, y)
             elif level[y][x] == 'b':
-                Tile('#', x, y)
-                Tile('.', x, y)
+                Tile('#', x, y, level_type)
+                Tile('.', x, y, level_type)
             elif level[y][x] == 'l':
                 Tile('l', x, y)
-                Tile('.', x, y)
+                Tile('.', x, y, level_type)
             elif level[y][x][0] == '=':
-                Tile(level[y][x], x, y)
+                Tile(level[y][x], x, y, level_type)
                 if MERCHANTS[int(level[y][x][1:])]['last trade'] is not None and datetime.datetime.now() - \
                         MERCHANTS[int(level[y][x][1:])]['last trade'] > datetime.timedelta(minutes=10):
                     MERCHANTS[int(level[y][x][1:])]['change'] = generate_merchant(level_type)
             elif level[y][x][0] == 'u':
-                Tile(level[y][x], x, y)
+                Tile(level[y][x], x, y, level_type)
 
     # вернем игрока, а также размер поля в клетках
     return new_player, x + 1, y + 1
 
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
+    def __init__(self, tile_type, pos_x, pos_y, level_type='GREEN'):
         self.type = tile_type
         self.pos_x, self.pos_y = pos_x, pos_y
         super().__init__(tiles_group, all_sprites)
@@ -778,19 +786,19 @@ class Tile(pygame.sprite.Sprite):
             self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
         elif tile_type[0] == '?':
             self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
-                                                (tile_width, tile_height * 2))
+                                                (round(tile_width * 0.94), tile_height * 2))
             self.rect = self.image.get_rect()
             self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
         elif tile_type[0] == 'u':
-            self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.image = pygame.transform.scale(tile_images['.'][level_type], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] == '=':
-            self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
+            self.image = pygame.transform.scale(tile_images['.'][level_type], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
         elif tile_type[0] in tile_images.keys():
-            self.image = pygame.transform.scale(tile_images[tile_type], (tile_width, tile_height))
+            self.image = pygame.transform.scale(tile_images[tile_type][level_type], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
                 tile_width * pos_x, tile_height * pos_y)
 
@@ -1283,6 +1291,7 @@ def draw_white(screen):
 def do_titres(particles):
     global player
     time = 399
+    count = 0
     ising = True
     ising_2 = True
     iss = True
@@ -1301,11 +1310,14 @@ def do_titres(particles):
                     iss = False
                 if event.key == pygame.K_c:
                     iss = True
+                if event.key == pygame.K_v:
+                    time += 1000 - 11000 * (do_white)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT and iss:
                     player.move()
+        count += 1
         if iss:
-            time += 10 - 2010 * (do_white)
+            time += 3 - 2003 * (do_white)
         screen.fill((0, 0, 0))
 
         # Астероиды
@@ -1362,8 +1374,9 @@ def do_titres(particles):
             if pygame.sprite.collide_mask(player, g):
                 do_white = True
         if not do_white:
-            if iss:
+            if iss and count == 2:
                 all_sprites.update()
+                count = 0
             stars_sprites.draw(screen)
             player_group.draw(screen)
             particles_sprites.draw(screen)
@@ -1381,7 +1394,7 @@ def do_titres(particles):
         print(time)
         pygame.display.flip()
         print(clock.tick())
-        clock.tick(FPS)
+        clock.tick(FPS * 3)
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
@@ -1457,8 +1470,8 @@ class FlyingPlayer(AnimatedSprite):
             is_not_break = False
             self.kill()
             return
-        elif self.rect.bottom >= HEIGHT + 100:
-            self.rect.top = -15
+        elif self.rect.bottom >= HEIGHT + 50 and self.is_last_way:
+            self.speedy = -1
         i = 0
         while i < len(self.slow):
             self.slow[i][0] -= 1
