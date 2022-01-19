@@ -161,7 +161,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 10
+    ship_level = 0
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -853,7 +853,7 @@ def blit_text(screen):
         text_to_blit.pop(0)
     if text_to_blit:
         line = text_to_blit[0][0]
-        if datetime.datetime.now() - text_to_blit[0][1] <= datetime.timedelta(seconds=2):
+        if datetime.datetime.now() - text_to_blit[0][1] <= datetime.timedelta(seconds=5):
             font = pygame.font.Font(None, 25)
             text = font.render(line, True, (255, 255, 255))
             text_w = text.get_width()
