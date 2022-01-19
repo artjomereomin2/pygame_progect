@@ -94,7 +94,7 @@ default_message = []
 text_to_blit = []
 
 screen_rect = (-100, 0, WIDTH + 100, HEIGHT)
-screen_rect_for_planets = (0, 0, WIDTH, HEIGHT)
+screen_rect_for_planets = (0, 50, WIDTH, HEIGHT)
 
 
 def load_image(name, color_key_list=None, size=None, rotate=0):
@@ -607,11 +607,11 @@ def map_selection(player_planet_num):
     # planets are spawning
     for i in range(len(PLANET_NAMES)):
         if i == player_planet:
-            PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=True,
+            PlanetView((randint(0, WIDTH - 100), randint(40, HEIGHT - 100)), i, player_here=True,
                        planet_type=PLANET_TYPE[i])
         else:
             while True:
-                self = PlanetView((randint(0, WIDTH - 100), randint(0, HEIGHT - 100)), i, player_here=False,
+                self = PlanetView((randint(0, WIDTH - 100), randint(40, HEIGHT - 100)), i, player_here=False,
                                   planet_type=PLANET_TYPE[i])
                 for sprite in planets:
                     if self is not sprite:
@@ -647,11 +647,13 @@ def map_selection(player_planet_num):
                                 if now_planet.player_here:
                                     break
                             planet_selected = planet
-                            wasted_fuel = int(calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
-                                                             int(planet.rect.centerx),
-                                                             int(planet.rect.centery)) / upgrades[ship_level][
-                                              'КПД двигателя'])
-                            send_message(f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. {num_repr(wasted_fuel)} топлива надо.')
+                            wasted_fuel = int(
+                                calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
+                                                   int(planet.rect.centerx),
+                                                   int(planet.rect.centery)) / upgrades[ship_level][
+                                    'КПД двигателя'])
+                            send_message(
+                                f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. {num_repr(wasted_fuel)} топлива надо.')
                             break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
@@ -678,7 +680,8 @@ def map_selection(player_planet_num):
                             res = flight_game(
                                 calculate_distance(int(now_planet.rect.centerx), int(now_planet.rect.centery),
                                                    int(planet_selected.rect.centerx),
-                                                   int(planet_selected.rect.centery)) // 2, upgrades[ship_level]['скорость'])
+                                                   int(planet_selected.rect.centery)) // 2,
+                                upgrades[ship_level]['скорость'])
                             for start_planet in planets:
                                 if start_planet.player_here:
                                     start_planet.player_here = False
@@ -1276,8 +1279,6 @@ def do_titres(particles):
     white = 0
     do_white = False
     while True:
-        if iss:
-            time += (5 - 2005 * (do_white)) * (time != 0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -1292,6 +1293,8 @@ def do_titres(particles):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT and iss:
                     player.move()
+        if iss:
+            time += 10 - 2010 * (do_white)
         screen.fill((0, 0, 0))
 
         # Астероиды
@@ -1317,11 +1320,9 @@ def do_titres(particles):
                 time = 250000
                 ising = False
             draw(screen, time)
-        text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях.' \
-               ' Достигнута I сверхсветовая скорость..................Достигнута II сверхсветовая скорость' \
-               '...............................Достигнута III сверхсветовая скорость.........................' \
-               '............................................................Вы прошли игру.' \
-               'Авторы сценария Артём Еретин, Пётр Пучков при участии Марии Рахмановой. Режиссёр постановщик Артём Еретин, Пётр Пучков. ' \
+        text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях. ' \
+               'Авторы сценария Артём Еретин, Пётр Пучков при участии Марии Рахмановой. ' \
+               'Режиссёр постановщик Артём Еретин, Пётр Пучков. ' \
                'Главные операторы Пётр Пучков, Pygame. Художник-постановщик Артём Еретин. ' \
                'Режиссёр Пётр Пучков, Артём Еретин. Монтажёр Pygame. Художник-гримёр Артём Еретин. ' \
                'Художник по костюмам Артём Еретин. Художник декоратор Артём Еретин. Художники Pygame, Random.randint. ' \
@@ -1330,14 +1331,9 @@ def do_titres(particles):
                'Административная группа Артём Еретин, Пётр Пучков. В главных ролях ЯндексКартинки, Random.randint. ' \
                'Группа каскадеров Астероиды под руководством Random.randint, Программа написана на языке Python 3.7.9 ' \
                'с использованием библеотеки Pygame'
-        if time == 0:
-            draw_text(0, HEIGHT // 2,
-                      'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
-        draw_text(WIDTH - (time - 400), HEIGHT // 2,
-                  text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
-        print(time)
 
-        if time >= 19000 and ising_2:
+
+        if time >= 17600 and ising_2:
             Garbage((WIDTH, -20), last=True)
             ising_2 = False
 
@@ -1359,6 +1355,16 @@ def do_titres(particles):
             player_group.draw(screen)
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
+        if time <= 0:
+            draw_text(WIDTH // 4 + randint(0, -time // 20000) - -time // 40000, (HEIGHT // 2 + randint(0, -time // 20000) - -time // 40000),
+                      'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
+        elif not do_white:
+            draw_text(WIDTH - (time - 400), HEIGHT // 2,
+                      text, (255, 255, 255), screen, font=50, line_size=len(text) + 5)
+        if time <= -1000000:
+            print('terminate()')
+            terminate()
+        print(time)
         pygame.display.flip()
         print(clock.tick())
         clock.tick(FPS)
@@ -1434,6 +1440,7 @@ class FlyingPlayer(AnimatedSprite):
         self.time += 1
         if self.rect.bottom >= HEIGHT + 100:
             is_not_break = False
+            self.kill()
             return
         i = 0
         while i < len(self.slow):
