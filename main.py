@@ -1271,6 +1271,10 @@ def draw(screen, count):
         pygame.draw.circle(screen, (255, 255, 255), (randint(0, WIDTH), randint(0, HEIGHT)), 1, 0)
 
 
+def draw_white(screen):
+    pygame.draw.rect(screen, (255, 255, 255), (0, 0, WIDTH, HEIGHT), 0)
+
+
 def do_titres(particles):
     time = 399
     ising = True
@@ -1317,9 +1321,12 @@ def do_titres(particles):
 
         if do_white and time != 0:
             if ising:
-                time = 250000
+                time = 340000
                 ising = False
-            draw(screen, time)
+            if time <= 290000:
+                draw(screen, time)
+            else:
+                draw_white(screen)
         text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях. ' \
                'Авторы сценария Артём Еретин, Пётр Пучков при участии Марии Рахмановой. ' \
                'Режиссёр постановщик Артём Еретин, Пётр Пучков. ' \
@@ -1331,7 +1338,6 @@ def do_titres(particles):
                'Административная группа Артём Еретин, Пётр Пучков. В главных ролях ЯндексКартинки, Random.randint. ' \
                'Группа каскадеров Астероиды под руководством Random.randint, Программа написана на языке Python 3.7.9 ' \
                'с использованием библеотеки Pygame'
-
 
         if time >= 17600 and ising_2:
             Garbage((WIDTH, -20), last=True)
@@ -1356,7 +1362,8 @@ def do_titres(particles):
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
         if time <= 0:
-            draw_text(WIDTH // 4 + randint(0, -time // 20000) - -time // 40000, (HEIGHT // 2 + randint(0, -time // 20000) - -time // 40000),
+            draw_text(WIDTH // 4 + randint(0, -time // 20000) - -time // 40000,
+                      (HEIGHT // 2 + randint(0, -time // 20000) - -time // 40000),
                       'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
         elif not do_white:
             draw_text(WIDTH - (time - 400), HEIGHT // 2,
