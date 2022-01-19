@@ -290,8 +290,8 @@ def planet_generator(n, w, h):
 
     staring_zone = arr_from_str(
         '# # # # # # # # #\n'
-        '# . . . . . . . #\n'
-        '# . . s . . @ . #\n'
+        '# . b b b . . . #\n'
+        '# . b b s . @ . #\n'
         '# . . l . . . . #\n'
         '# . . . . . . . #\n'
         '# . . . . . . . #'
@@ -735,7 +735,12 @@ def generate_level(level, level_type):
                 Tile('.', x, y)
                 Tile(level[y][x], x, y)
             elif level[y][x] == 's':
+                Tile('#', x, y)
+                Tile('.', x, y)
                 Tile('s', x, y)
+            elif level[y][x] == 'b':
+                Tile('#', x, y)
+                Tile('.', x, y)
             elif level[y][x] == 'l':
                 Tile('l', x, y)
                 Tile('.', x, y)
@@ -758,10 +763,10 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(tiles_group, all_sprites)
         if tile_type == 's':
             # TODO show to player that ship is here(design)
-            self.image = load_image('hero.png', [-1], (3 * tile_width, 3 * tile_height))
+            self.image = load_image('hero.png', [-1], (6 * tile_width, 2 * tile_height))
             self.rect = self.image.get_rect()
             self.rect.bottom = tile_height * pos_y + tile_height
-            self.rect.centerx = tile_width * pos_x + tile_width // 2
+            self.rect.centerx = tile_width * pos_x - round(tile_width * 1.5)
         elif tile_type == 'l':
             self.image = exit_image
             self.rect = self.image.get_rect().move(
@@ -773,9 +778,9 @@ class Tile(pygame.sprite.Sprite):
             self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
         elif tile_type[0] == '?':
             self.image = pygame.transform.scale(mystery_merchants_images[MERCHANTS[int(tile_type[1:])]['image_num']],
-                                                (tile_width * 2, tile_height * 2))
-            self.rect = self.image.get_rect().move(
-                tile_width * pos_x, tile_height * pos_y)
+                                                (tile_width, tile_height * 2))
+            self.rect = self.image.get_rect()
+            self.rect.center = (round(tile_width * (pos_x + 0.5)), round(tile_height * (pos_y + 0.5)))
         elif tile_type[0] == 'u':
             self.image = pygame.transform.scale(tile_images['.'], (tile_width, tile_height))
             self.rect = self.image.get_rect().move(
@@ -1276,12 +1281,14 @@ def draw_white(screen):
 
 
 def do_titres(particles):
+    global player
     time = 399
     ising = True
     ising_2 = True
     iss = True
     white = 0
     do_white = False
+    player.is_last_way = True
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1362,8 +1369,8 @@ def do_titres(particles):
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
         if time <= 0:
-            draw_text(WIDTH // 4 + randint(0, -time // 20000) - -time // 40000,
-                      (HEIGHT // 2 + randint(0, -time // 20000) - -time // 40000),
+            draw_text(WIDTH // 4 + randint(0, -time // 40000) - -time // 80000,
+                      (HEIGHT // 2 + randint(0, -time // 40000) - -time // 80000),
                       'Единорожек Паша следит за тобой', (255, 255, 255), screen, font=50, line_size=len(text) + 5)
         elif not do_white:
             draw_text(WIDTH - (time - 400), HEIGHT // 2,
@@ -1415,6 +1422,7 @@ class FlyingPlayer(AnimatedSprite):
                          pos_y,
                          switch=lambda x: x % 10 == 0, scale_to=(100, 100))
         self.speedy = 0
+        self.is_last_way = False
         self.acceleration = 4
         self.G = 9.8 / FPS
         self.slow = []
@@ -1445,10 +1453,12 @@ class FlyingPlayer(AnimatedSprite):
         if self.rect.top <= -20:
             self.speedy = 1
         self.time += 1
-        if self.rect.bottom >= HEIGHT + 100:
+        if self.rect.bottom >= HEIGHT + 100 and not self.is_last_way:
             is_not_break = False
             self.kill()
             return
+        elif self.rect.bottom >= HEIGHT + 100:
+            self.rect.top = -15
         i = 0
         while i < len(self.slow):
             self.slow[i][0] -= 1
