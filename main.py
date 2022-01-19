@@ -1236,7 +1236,7 @@ def do_titres(particles):
     do_white = False
     while True:
         if iss:
-            time += (5 - 1005 * (do_white)) * (time != 0)
+            time += (5 - 2005 * (do_white)) * (time != 0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -1265,7 +1265,7 @@ def do_titres(particles):
 
         # Кометы
         star_picture = random.choice((star_red_picture, star_blue_picture, star_blue_picture))
-        if randint(0, 1):
+        if randint(0, 1) and iss:
             for _ in range(max(min(time // 100, 5), 3)):
                 Particle((randint((WIDTH // 3) * 2, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
                          [star_picture],
@@ -1416,8 +1416,9 @@ def do_titres(particles):
         for g in garbage_group:
             if pygame.sprite.collide_mask(player, g):
                 do_white = True
-        if iss and not do_white:
-            all_sprites.update()
+        if not do_white:
+            if iss:
+                all_sprites.update()
             stars_sprites.draw(screen)
             player_group.draw(screen)
             particles_sprites.draw(screen)
