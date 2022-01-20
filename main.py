@@ -169,7 +169,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 10
+    ship_level = 0
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -677,7 +677,7 @@ def map_selection(player_planet_num):
                         planet_game(planet_selected.num)
                         save('last_save.txt')
                     else:
-                        save('lase_save.txt')
+                        save('last_save.txt')
                         if wasted_fuel > have['FUEL']:
                             send_message('Недостаточно топлива.')
                         else:
@@ -831,6 +831,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
                     <= upgrades[ship_level]['грузоподъёмность']:
                 have[offer[1]] -= offer[3]
                 have[offer[0]] += offer[2]
+                return True
             else:
                 if not have[offer[1]] >= offer[3]:
                     send_message("В долг не даю.")
@@ -843,6 +844,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
             else:
                 send_message('В долг не даю.')
         ship_level = min(ship_level, 9)
+        return False
 
 
 class Camera:
@@ -1033,7 +1035,7 @@ def trade_game(screen, merchant, player):
         for offer in merchant['change']:
             screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10 + move_right, k))
             screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
-            button = [(WIDTH - window_w) // 2 + 90, k]
+            button = [(WIDTH - window_w) // 2 + 90 + move_right, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
                              f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
                              (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
@@ -1066,10 +1068,10 @@ def trade_game(screen, merchant, player):
                     if pygame.Rect((buttons[i][0], buttons[i][1]), (buttons[i][2], buttons[i][3])).collidepoint(
                             event.pos):
                         if merchant['change'] != 'UPGRADE':
-                            player.change(merchant['change'][i])
+                            res = player.change(merchant['change'][i])
                         else:
-                            player.change(['PETROLEUM', 'ARTJOMEUM'][i])
-                        if randint(0, 5) == 0 and merchant['change'] != 'UPGRADE':
+                            res = player.change(['PETROLEUM', 'ARTJOMEUM'][i])
+                        if res and randint(0, 5) == 0 and merchant['change'] != 'UPGRADE':
                             buttons.pop(-1)
                             merchant['change'].pop(i)
                         break
