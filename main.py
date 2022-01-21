@@ -298,10 +298,10 @@ def planet_generator(n, w, h):
 
     staring_zone = arr_from_str(
         '# # # # # # # # #\n'
-        '# . b b b . . . #\n'
-        '# . b b s . @ . #\n'
-        '# . . l . . . . #\n'
-        '# . . . . . . . #\n'
+        '# b b b b b . . #\n'
+        '# b b b b b b . #\n'
+        '# b b b b s b . #\n'
+        '# . . l l . @ . #\n'
         '# . . . . . . . #'
     )
     small_shop_down = arr_from_str(
@@ -771,10 +771,10 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(tiles_group, all_sprites)
         if tile_type == 's':
             # TODO show to player that ship is here(design)
-            self.image = load_image('hero.png', [-1], (6 * tile_width, 2 * tile_height))
+            self.image = load_image('hero.png', [-1], (10 * tile_width, 3 * tile_height))
             self.rect = self.image.get_rect()
             self.rect.bottom = tile_height * pos_y + tile_height
-            self.rect.centerx = tile_width * pos_x - round(tile_width * 1.5)
+            self.rect.centerx = tile_width * pos_x - round(tile_width * 3)
         elif tile_type == 'l':
             self.image = exit_image
             self.rect = self.image.get_rect().move(
