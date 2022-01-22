@@ -597,6 +597,69 @@ class PlanetView(pygame.sprite.Sprite):
         self.num = num
         self.rect.x, self.rect.y = pos[0], pos[1]
         self.player_here = player_here
+        self.vx = 0
+        self.vy = 0
+        self.x, self.y = self.rect.centerx, self.rect.centery
+
+    def update(self):
+        dx = self.rect.centerx - WIDTH / 2
+        dy = self.rect.centery - HEIGHT / 2
+        if dx > 0:
+            if abs(dx) > 30:
+                self.vx -= 0.1
+            elif abs(dx) > 10:
+                self.vx -= 0.01
+            else:
+                self.vx += 0.1
+        else:
+            if abs(dx) > 30:
+                self.vx += 0.1
+            elif abs(dx) > 10:
+                self.vx += 0.01
+            else:
+                self.vx -= 0.1
+        if dy > 0:
+            if abs(dy) > 30:
+                self.vy -= 0.1
+            elif abs(dy) > 10:
+                self.vy -= 0.01
+            else:
+                self.vy += 0.1
+        else:
+            if abs(dy) > 30:
+                self.vy += 0.1
+            elif abs(dy) > 10:
+                self.vy += 0.01
+            else:
+                self.vy -= 0.1
+
+        for planet in planets:
+            dx = planet.x - self.x
+            dy = planet.y - self.y
+            print(dx, dy)
+            if abs(dx) < 200 and abs(dy) < 200 and not (dx == dy == 0):
+                if dx > 0:
+                    self.vx -= 1
+                else:
+                    self.vx += 1
+                if dy > 0:
+                    self.vy -= 1
+                else:
+                    self.vy += 1
+
+        if self.x <= 100:
+            self.vx += 2
+        if self.x >= WIDTH - 100:
+            self.vx -= 2
+        if self.y <= 100:
+            self.vy += 2
+        if self.y >= HEIGHT - 100:
+            self.vy -= 2
+
+        self.x += self.vx / 10000
+        self.y += self.vy / 10000
+
+        self.rect.centerx, self.rect.centery = self.x, self.y
 
 
 def map_selection(player_planet_num):
@@ -699,6 +762,7 @@ def map_selection(player_planet_num):
                                 planet_selected.player_here = True
                                 player_planet = planet_selected.num
                             else:
+                                send_message('Вы разбились')
                                 planet = random.choice(list(planets))
                                 ship_level = ship_level // randint(2, 10)
                                 for i in range(len(goods)):
@@ -711,6 +775,7 @@ def map_selection(player_planet_num):
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
         planets.draw(screen)
+        planets.update()
         for planet in planets:
             if planet.player_here:
                 screen.blit(here_sigh, (planet.rect.centerx - 25, planet.rect.centery - 90))
@@ -843,7 +908,7 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
                 ship_level += 1
             else:
                 send_message('В долг не даю.')
-        ship_level = min(ship_level, 9)
+        ship_level = min(ship_level, 10)
         return False
 
 
@@ -1187,7 +1252,6 @@ def planet_game(num):
 
 
 def flight_game(level_max, speed, fly_away=True):
-    print(level_max, speed)
     global player, iss
     player = FlyingPlayer(100, HEIGHT // 2)
     particles = []
@@ -1229,7 +1293,6 @@ def flight_game(level_max, speed, fly_away=True):
                 ratio = -1
                 level = level_max
             if len(garbage_group) == 0 and ratio == -1:
-                print(11)
                 if ship_level < 10:
                     for sprite in all_sprites:
                         sprite.kill()
@@ -1383,6 +1446,8 @@ def do_titres(particles):
             player_group.draw(screen)
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
+        else:
+            all_sprites.clear()
         if time <= 0:
             draw_text(WIDTH // 4 + randint(0, -time // 40000) - -time // 80000,
                       (HEIGHT // 2 + randint(0, -time // 40000) - -time // 80000),
@@ -1393,9 +1458,8 @@ def do_titres(particles):
         if time <= -1000000:
             print('terminate()')
             terminate()
-        print(time)
         pygame.display.flip()
-        print(clock.tick())
+        clock.tick()
         clock.tick(FPS * 3)
 
 
