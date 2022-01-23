@@ -724,7 +724,8 @@ def map_selection(player_planet_num):
                                                    int(planet.rect.centery)) / upgrades[ship_level][
                                     'КПД двигателя'])
                             send_message(
-                                f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. {num_repr(wasted_fuel)} топлива надо.')
+                                f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. '
+                                f'{num_repr(wasted_fuel)} топлива надо.')
                             break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
@@ -892,8 +893,8 @@ class PlayerOnPlanet(pygame.sprite.Sprite):
     def change(self, offer):
         global ship_level
         if type(offer) == tuple:
-            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - weight[offer[1]] \
-                    <= upgrades[ship_level]['грузоподъёмность']:
+            if have[offer[1]] >= offer[3] and calc_weight() + offer[2] * weight[offer[0]] - offer[3] - \
+                    weight[offer[1]] <= upgrades[ship_level]['грузоподъёмность']:
                 have[offer[1]] -= offer[3]
                 have[offer[0]] += offer[2]
                 return True
@@ -1052,7 +1053,7 @@ def draw_text(x, y, text, color, screen, font, line_size=20, fon_color=None, wid
     text_x = x
     mxw = 0
     to_blit = []
-    if width == None:
+    if width is None:
         lined_text = line_text(text, line_size)
     else:
         lined_text = line_text(text, width // Font.render('a', True, color).get_width())
@@ -1102,7 +1103,8 @@ def trade_game(screen, merchant, player):
             screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
             button = [(WIDTH - window_w) // 2 + 90 + move_right, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                             f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
+                             f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, "
+                             f"тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
                              (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
             button.append(w)
             button.append(k - button[1])
@@ -1113,7 +1115,8 @@ def trade_game(screen, merchant, player):
             screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
             button = [(WIDTH - window_w) // 2 + 90 + move_right, k]
             k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                             f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                             f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, "
+                             f"тебе давать я корабля улучшение.",
                              (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128), min_lines=3)
             button.append(w)
             button.append(k - button[1])
@@ -1160,7 +1163,8 @@ def trade_game(screen, merchant, player):
         pygame.draw.rect(screen, (23, 23, 23), (((WIDTH - window_w) // 2 + move_right, 0), (window_w, window_h)))
 
         k, w = draw_text((WIDTH - window_w) // 2 + 10 + move_right, 10,
-                         f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. С планеты {merchant['home planet']} я есть.",
+                         f"Здравтсвуй, путник. Величать меня {merchant['name']} можешь. "
+                         f"С планеты {merchant['home planet']} я есть.",
                          (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
         k, w = draw_text((WIDTH - window_w) // 2 + 10 + move_right, k, "К лучшему меняемся:",
                          (255, 255, 255), screen, 50, width=window_w - 20, fon_color=(128, 128, 128))
@@ -1169,7 +1173,8 @@ def trade_game(screen, merchant, player):
                 screen.blit(pictures_of_goods[offer[1]], ((WIDTH - window_w) // 2 + 10 + move_right, k))
                 screen.blit(pictures_of_goods[offer[0]], ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                                 f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
+                                 f"Мне ты давать {num_repr(offer[3])} {goods_translated[goods.index(offer[1])]}, "
+                                 f"тебе давать я {num_repr(offer[2])} {goods_translated[goods.index(offer[0])]}",
                                  (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
                                  min_lines=3)
         else:
@@ -1177,7 +1182,8 @@ def trade_game(screen, merchant, player):
                 screen.blit(pictures_of_goods[x], ((WIDTH - window_w) // 2 + 10 + move_right, k))
                 screen.blit(upgrade_image, ((WIDTH + window_w) // 2 - 75 - 6 + move_right, k))
                 k, w = draw_text((WIDTH - window_w) // 2 + 90 + move_right, k,
-                                 f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, тебе давать я корабля улучшение.",
+                                 f"Мне ты давать {ship_level + 1} {goods_translated[goods.index(x)]}, "
+                                 f"тебе давать я корабля улучшение.",
                                  (255, 255, 255), screen, 30, width=window_w - 180, fon_color=(128, 128, 128),
                                  min_lines=3)
         blit_text(screen)
@@ -1357,8 +1363,8 @@ def do_titres(particles):
     global player
     time = 399
     count = 0
-    ising = True
-    ising_2 = True
+    is_ing = True
+    is_ing_2 = True
     iss = True
     white = 0
     do_white = False
@@ -1404,28 +1410,27 @@ def do_titres(particles):
                          (max(-1 * (max(time // 100, 1)), -4), 0), do_kill=False, groups=(stars_sprites, all_sprites))
 
         if do_white and time != 0:
-            if ising:
+            if is_ing:
                 time = 340000
-                ising = False
+                is_ing = False
             if time <= 290000:
                 draw(screen, time)
             else:
                 draw_white(screen)
         text = 'Поздравляем, ваша миссия в этой галактика завершена. Желаем удачи в новых приключениях. ' \
                'Авторы сценария Артём Еретин, Пётр Пучков при участии Марии Рахмановой. ' \
-               'Режиссёр постановщик Артём Еретин, Пётр Пучков. ' \
-               'Главные операторы Пётр Пучков, Pygame. Художник-постановщик Артём Еретин. ' \
-               'Режиссёр Пётр Пучков, Артём Еретин. Монтажёр Pygame. Художник-гримёр Артём Еретин. ' \
-               'Художник по костюмам Артём Еретин. Художник декоратор Артём Еретин. Художники Pygame, Random.randint. ' \
-               'Ассистент оператора Артём Еретин. Цветоустановщики Артём Еретин, Pygame, Random.randint. ' \
-               'Консультант по постановке спецэффектов Мария Рахманова. ' \
+               'Режиссёр постановщик Артём Еретин, Пётр Пучков. Главные операторы Пётр Пучков, Pygame. ' \
+               'Художник-постановщик Артём Еретин. Режиссёр Пётр Пучков, Артём Еретин. Монтажёр Pygame. ' \
+               'Художник-гримёр Артём Еретин. Художник по костюмам Артём Еретин. Художник декоратор Артём Еретин. ' \
+               'Художники Pygame, Random.randint. Ассистент оператора Артём Еретин. Цветоустановщики Артём Еретин, ' \
+               'Pygame, Random.randint. Консультант по постановке спецэффектов Мария Рахманова. ' \
                'Административная группа Артём Еретин, Пётр Пучков. В главных ролях ЯндексКартинки, Random.randint. ' \
-               'Группа каскадеров Астероиды под руководством Random.randint, Программа написана на языке Python 3.7.9 ' \
-               'с использованием библеотеки Pygame'
+               'Группа каскадеров Астероиды под руководством Random.randint, ' \
+               'Программа написана на языке Python 3.7.9 с использованием библеотеки Pygame'
 
-        if time >= 17600 and ising_2:
+        if time >= 17600 and is_ing_2:
             Garbage((WIDTH, -20), last=True)
-            ising_2 = False
+            is_ing_2 = False
 
         while i < len(particles) and iss and not do_white:
             p = particles[i]
