@@ -105,6 +105,8 @@ def load_image(name, color_key_list=None, size=None, rotate=0):
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
         image = pygame.image.load(fullname)
+        if size is not None:
+            image = pygame.transform.scale(image, size)
         image = pygame.transform.rotate(image, rotate)
     else:
         image = name
@@ -118,8 +120,6 @@ def load_image(name, color_key_list=None, size=None, rotate=0):
             image = load_image(image, color_key_list=color_key_list, size=size)
     else:
         image = image.convert_alpha()
-    if size is not None:
-        image = pygame.transform.scale(image, size)
     return image
 
 
@@ -454,19 +454,22 @@ def planet_generator(n, w, h):
 
 
 class Garbage(pygame.sprite.Sprite):
-    image_small = load_image("garbage.png", [-1], (75, 75), 180)
+    images_small = [load_image("garbage.png", [-1], (75, 75), i) for i in range(0,360,1)]
     image_big = load_image("big_garbage.png", [-1], (200, 200))
     super_big = load_image("last_meteor.png", [-1], (HEIGHT + 100, HEIGHT + 100))
 
     def __init__(self, pos, big=False, last=False):
         super().__init__(all_sprites, garbage_group)
+        self.rotation = randint(0,360-1)
+        self.time = 0
         if big:
             self.image = Garbage.image_big
         elif not last:
-            self.image = Garbage.image_small
+            self.image = Garbage.images_small[self.rotation]
         else:
             self.image = Garbage.super_big
         self.big = big
+        self.last = last
         self.gravitate = 0
         self.rect = self.image.get_rect()
         # вычисляем маску для эффективного сравнения
@@ -475,8 +478,12 @@ class Garbage(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
+        self.time+=1
         self.rect.x -= 3 + int(self.gravitate)
         self.rect.y += +randint(-4, 4)
+        if not self.big and not self.last and self.time%1==0:
+            self.rotation = (self.rotation+5)%360
+            self.image = Garbage.images_small[self.rotation]
         if not self.rect.colliderect(screen_rect):
             self.kill()
         self.gravitate += G
@@ -636,25 +643,24 @@ class PlanetView(pygame.sprite.Sprite):
         for planet in planets:
             dx = planet.x - self.x
             dy = planet.y - self.y
-            print(dx, dy)
             if abs(dx) < 200 and abs(dy) < 200 and not (dx == dy == 0):
                 if dx > 0:
-                    self.vx -= 1
+                    self.vx -= 2
                 else:
-                    self.vx += 1
+                    self.vx += 2
                 if dy > 0:
-                    self.vy -= 1
+                    self.vy -= 2
                 else:
-                    self.vy += 1
+                    self.vy += 2
 
         if self.x <= 100:
-            self.vx += 2
+            self.vx += 10
         if self.x >= WIDTH - 100:
-            self.vx -= 2
+            self.vx -= 10
         if self.y <= 100:
-            self.vy += 2
+            self.vy += 10
         if self.y >= HEIGHT - 100:
-            self.vy -= 2
+            self.vy -= 10
 
         self.x += self.vx / 10000
         self.y += self.vy / 10000
