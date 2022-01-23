@@ -21,6 +21,7 @@ all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 particles_sprites = pygame.sprite.Group()
 stars_sprites = pygame.sprite.Group()
+stars_map_sprites = pygame.sprite.Group()
 garbage_group = pygame.sprite.Group()
 is_not_break = None
 
@@ -169,7 +170,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 0
+    ship_level = 10
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -643,29 +644,28 @@ class PlanetView(pygame.sprite.Sprite):
         for planet in planets:
             dx = planet.x - self.x
             dy = planet.y - self.y
-            if abs(dx) < 200 and abs(dy) < 200 and not (dx == dy == 0):
+            if abs(dx) < 150 and abs(dy) < 150 and not (dx == dy == 0):
                 if dx > 0:
-                    self.vx -= 2
+                    self.vx -= 15
                 else:
-                    self.vx += 2
+                    self.vx += 15
                 if dy > 0:
-                    self.vy -= 2
+                    self.vy -= 15
                 else:
-                    self.vy += 2
-
-        if self.x <= 100:
-            self.vx += 10
-        if self.x >= WIDTH - 100:
-            self.vx -= 10
-        if self.y <= 100:
-            self.vy += 10
-        if self.y >= HEIGHT - 100:
-            self.vy -= 10
+                    self.vy += 15
+        if self.x <= 200 and self.vx < 1000:
+            self.vx += 20
+        if self.x >= WIDTH - 200 and self.vx > -1000:
+            self.vx -= 20
+        if self.y <= 200 and self.vy < 1000:
+            self.vy += 20
+        if self.y >= HEIGHT - 200 and self.vy > -1000:
+            self.vy -= 20
 
         self.x += self.vx / 10000
         self.y += self.vy / 10000
 
-        self.rect.centerx, self.rect.centery = self.x, self.y
+        self.rect.centerx, self.rect.centery = round(self.x), round(self.y)
 
 
 def map_selection(player_planet_num):
@@ -673,6 +673,11 @@ def map_selection(player_planet_num):
     player_planet = player_planet_num
     # TODO find space.png for background
     fon = pygame.Surface([WIDTH, HEIGHT])
+    for _ in range(100):
+        star_picture = random.choice((star_red_picture, star_blue_picture, star_blue_picture))
+        Particle((randint(0, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                 [star_picture],
+                 [0, 0], do_kill=False, groups=(stars_map_sprites, all_sprites), is_map=True)
     fon.fill((0, 0, 0))
     screen.blit(fon, (0, 0))
     # fon = pygame.transform.scale(load_image('space.png'), (WIDTH, HEIGHT))
@@ -730,9 +735,14 @@ def map_selection(player_planet_num):
                                                    int(planet.rect.centery)) / upgrades[ship_level][
                                     'КПД двигателя'])
                             send_message(
-                                f'Enter жми, чтобы не планету {PLANET_NAMES[planet_selected.num]} лететь. '
+                                f'Enter жми, чтобы на планету {PLANET_NAMES[planet_selected.num]} лететь. '
                                 f'{num_repr(wasted_fuel)} топлива надо.')
                             break
+                else:
+                    if pygame.rect.Rect(1050, 500, 100, 50).collidepoint(*event.pos) and ship_level == 10:
+                        flight_game(
+                            10,
+                            1, True)
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
                     PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have = load(
@@ -781,6 +791,8 @@ def map_selection(player_planet_num):
 
         # TODO show where we are(design)
         screen.blit(fon, (0, 0))
+        stars_map_sprites.draw(screen)
+        stars_map_sprites.update()
         planets.draw(screen)
         planets.update()
         for planet in planets:
@@ -790,8 +802,13 @@ def map_selection(player_planet_num):
         blit_text(screen)
         if is_open_inventory:
             inventory(screen)
+        if ship_level == 10:
+            pygame.draw.rect(screen, (200, 200, 200), (1050, 500, 100, 50), 0)
+            font = pygame.font.Font(None, 50)
+            text = font.render("Exit", True, (100, 100, 100))
+            screen.blit(text, (1055, 505))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(FPS * 2)
 
 
 def generate_level(level, level_type):
@@ -1263,7 +1280,7 @@ def planet_game(num):
         clock.tick(FPS)
 
 
-def flight_game(level_max, speed, fly_away=True):
+def flight_game(level_max, speed, fly_away=False):
     global player, iss
     player = FlyingPlayer(100, HEIGHT // 2)
     particles = []
@@ -1305,11 +1322,11 @@ def flight_game(level_max, speed, fly_away=True):
                 ratio = -1
                 level = level_max
             if len(garbage_group) == 0 and ratio == -1:
-                if ship_level < 10:
+                if not fly_away:
                     for sprite in all_sprites:
                         sprite.kill()
                     return True
-                elif fly_away:
+                else:
                     do_titres(particles)
         i = 0
         while i < len(particles) and iss:
@@ -1574,13 +1591,14 @@ class Particle(pygame.sprite.Sprite):
     for scale in (5, 10, 20):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))'''
 
-    def __init__(self, pos, dx, dy, pictures, gravity=(0, 1), change=lambda x: x % 20 == 0, do_kill=True,
-                 groups=(all_sprites, particles_sprites)):
+    def __init__(self, pos, dx, dy, pictures, gravity=[0, 1], change=lambda x: x % 20 == 0, do_kill=True,
+                 groups=(all_sprites, particles_sprites), is_map=False):
         super().__init__(*groups)
         self.pictures = pictures
         self.image_ind = random.choice(list(range(len(pictures))))
         self.image = self.pictures[self.image_ind]
         self.rect = self.image.get_rect()
+        self.is_map = is_map
 
         self.time = 0
 
@@ -1601,11 +1619,37 @@ class Particle(pygame.sprite.Sprite):
 
         # применяем гравитационный эффект:
         # движение с ускорением под действием гравитации
-        self.velocity[0] += self.gravity[0]
-        self.velocity[1] += self.gravity[1]
+        if not self.is_map:
+            self.velocity[0] += self.gravity[0]
+            self.velocity[1] += self.gravity[1]
+        else:
+            self.gravity[0] += randint(0, 2) - 1
+            self.gravity[1] += randint(0, 2) - 1
+            self.velocity[0] += self.gravity[0] / 10
+            self.velocity[1] += self.gravity[1] / 10
+            if self.rect.x <= 200 and self.velocity[0] < 1000:
+                self.velocity[0] += 5
+            if self.rect.x >= WIDTH - 200 and self.velocity[0] > -1000:
+                self.velocity[0] -= 5
+            if self.rect.y <= 200 and self.velocity[1] < 1000:
+                self.velocity[1] += 5
+            if self.rect.y >= HEIGHT - 200 and self.velocity[1] > -1000:
+                self.velocity[1] -= 5
+            if self.rect.x <= 100 and self.velocity[0] < 1000:
+                self.velocity[0] += 5
+            if self.rect.x >= WIDTH - 100 and self.velocity[0] > -1000:
+                self.velocity[0] -= 5
+            if self.rect.y <= 100 and self.velocity[1] < 1000:
+                self.velocity[1] += 5
+            if self.rect.y >= HEIGHT - 100 and self.velocity[1] > -1000:
+                self.velocity[1] -= 5
+            if self.time % 2 == 0:
+                self.rect.x += round(self.velocity[0] / 10)
+                self.rect.y += round(self.velocity[1] / 10)
         # перемещаем частицу
-        self.rect.x += self.velocity[0]
-        self.rect.y += self.velocity[1]
+        if not self.is_map:
+            self.rect.x += self.velocity[0]
+            self.rect.y += self.velocity[1]
 
         if self.change(self.time):
             self.image_ind += 1
@@ -1617,7 +1661,7 @@ class Particle(pygame.sprite.Sprite):
             self.rect = self.image.get_rect()
             self.rect.x, self.rect.y = x, y
         # убиваем, если частица ушла за экран
-        if not self.rect.colliderect(screen_rect):
+        if not self.rect.colliderect(screen_rect) and not self.is_map:
             self.kill()
 
 
