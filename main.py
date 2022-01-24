@@ -1627,54 +1627,55 @@ class Particle(pygame.sprite.Sprite):
         self.do_kill = do_kill
 
     def update(self):
-        self.time += 1
+        if self.alive():
+            self.time += 1
 
-        # применяем гравитационный эффект:
-        # движение с ускорением под действием гравитации
-        if not self.is_map:
-            self.velocity[0] += self.gravity[0]
-            self.velocity[1] += self.gravity[1]
-        else:
-            self.gravity[0] += randint(0, 2) - 1
-            self.gravity[1] += randint(0, 2) - 1
-            self.velocity[0] += self.gravity[0] / 10
-            self.velocity[1] += self.gravity[1] / 10
-            if self.rect.x <= 200 and self.velocity[0] < 1000:
-                self.velocity[0] += 5
-            if self.rect.x >= WIDTH - 200 and self.velocity[0] > -1000:
-                self.velocity[0] -= 5
-            if self.rect.y <= 200 and self.velocity[1] < 1000:
-                self.velocity[1] += 5
-            if self.rect.y >= HEIGHT - 200 and self.velocity[1] > -1000:
-                self.velocity[1] -= 5
-            if self.rect.x <= 100 and self.velocity[0] < 1000:
-                self.velocity[0] += 5
-            if self.rect.x >= WIDTH - 100 and self.velocity[0] > -1000:
-                self.velocity[0] -= 5
-            if self.rect.y <= 100 and self.velocity[1] < 1000:
-                self.velocity[1] += 5
-            if self.rect.y >= HEIGHT - 100 and self.velocity[1] > -1000:
-                self.velocity[1] -= 5
-            if self.time % 2 == 0:
-                self.rect.x += round(self.velocity[0] / 10)
-                self.rect.y += round(self.velocity[1] / 10)
-        # перемещаем частицу
-        if not self.is_map:
-            self.rect.x += self.velocity[0]
-            self.rect.y += self.velocity[1]
+            # применяем гравитационный эффект:
+            # движение с ускорением под действием гравитации
+            if not self.is_map:
+                self.velocity[0] += self.gravity[0]
+                self.velocity[1] += self.gravity[1]
+            else:
+                self.gravity[0] += randint(0, 2) - 1
+                self.gravity[1] += randint(0, 2) - 1
+                self.velocity[0] += self.gravity[0] / 10
+                self.velocity[1] += self.gravity[1] / 10
+                if self.rect.x <= 200 and self.velocity[0] < 1000:
+                    self.velocity[0] += 5
+                if self.rect.x >= WIDTH - 200 and self.velocity[0] > -1000:
+                    self.velocity[0] -= 5
+                if self.rect.y <= 200 and self.velocity[1] < 1000:
+                    self.velocity[1] += 5
+                if self.rect.y >= HEIGHT - 200 and self.velocity[1] > -1000:
+                    self.velocity[1] -= 5
+                if self.rect.x <= 100 and self.velocity[0] < 1000:
+                    self.velocity[0] += 5
+                if self.rect.x >= WIDTH - 100 and self.velocity[0] > -1000:
+                    self.velocity[0] -= 5
+                if self.rect.y <= 100 and self.velocity[1] < 1000:
+                    self.velocity[1] += 5
+                if self.rect.y >= HEIGHT - 100 and self.velocity[1] > -1000:
+                    self.velocity[1] -= 5
+                if self.time % 2 == 0:
+                    self.rect.x += round(self.velocity[0] / 10)
+                    self.rect.y += round(self.velocity[1] / 10)
+            # перемещаем частицу
+            if not self.is_map:
+                self.rect.x += self.velocity[0]
+                self.rect.y += self.velocity[1]
 
-        if self.change(self.time):
-            self.image_ind += 1
-            if self.image_ind == len(self.pictures) and self.do_kill:
+            if self.change(self.time):
+                self.image_ind += 1
+                if self.image_ind == len(self.pictures) and self.do_kill:
+                    self.kill()
+                    return
+                self.image = self.pictures[self.image_ind % len(self.pictures)]
+                x, y = self.rect.x, self.rect.y
+                self.rect = self.image.get_rect()
+                self.rect.x, self.rect.y = x, y
+            # убиваем, если частица ушла за экран
+            if not self.rect.colliderect(screen_rect) and not self.is_map:
                 self.kill()
-                return
-            self.image = self.pictures[self.image_ind % len(self.pictures)]
-            x, y = self.rect.x, self.rect.y
-            self.rect = self.image.get_rect()
-            self.rect.x, self.rect.y = x, y
-        # убиваем, если частица ушла за экран
-        if not self.rect.colliderect(screen_rect) and not self.is_map:
-            self.kill()
 
 
 class SpawnParticles:
