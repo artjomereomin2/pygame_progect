@@ -170,7 +170,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 10
+    ship_level = 0
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -455,13 +455,13 @@ def planet_generator(n, w, h):
 
 
 class Garbage(pygame.sprite.Sprite):
-    images_small = [load_image("garbage.png", [-1], (75, 75), i) for i in range(0,360,1)]
+    images_small = [load_image("garbage.png", [-1], (75, 75), i) for i in range(0, 360, 1)]
     image_big = load_image("big_garbage.png", [-1], (200, 200))
     super_big = load_image("last_meteor.png", [-1], (HEIGHT + 100, HEIGHT + 100))
 
     def __init__(self, pos, big=False, last=False):
         super().__init__(all_sprites, garbage_group)
-        self.rotation = randint(0,360-1)
+        self.rotation = randint(0, 360 - 1)
         self.time = 0
         if big:
             self.image = Garbage.image_big
@@ -479,11 +479,11 @@ class Garbage(pygame.sprite.Sprite):
         self.rect.y = pos[1]
 
     def update(self):
-        self.time+=1
+        self.time += 1
         self.rect.x -= 3 + int(self.gravitate)
         self.rect.y += +randint(-4, 4)
-        if not self.big and not self.last and self.time%1==0:
-            self.rotation = (self.rotation+5)%360
+        if not self.big and not self.last and self.time % 1 == 0:
+            self.rotation = (self.rotation + 5) % 360
             self.image = Garbage.images_small[self.rotation]
         if not self.rect.colliderect(screen_rect):
             self.kill()
@@ -497,7 +497,7 @@ def terminate():
 
 def start_screen():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    intro_text = ["Название игры",
+    intro_text = ["Cosmario",
                   "",
                   "Приветствуем вас. Вы разбились в неизвестной", "вам галактике, но ваш друг помог вам.",
                   "Он дал вам немного топлива, золота",
@@ -755,6 +755,11 @@ def map_selection(player_planet_num):
                     elif planet_selected.player_here:
                         save('last_save.txt')
                         planet_game(planet_selected.num)
+                        for _ in range(100):
+                            star_picture = random.choice((star_red_picture, star_blue_picture, star_blue_picture))
+                            Particle((randint(0, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                                     [star_picture],
+                                     [0, 0], do_kill=False, groups=(stars_map_sprites, all_sprites), is_map=True)
                         save('last_save.txt')
                     else:
                         save('last_save.txt')
@@ -770,6 +775,11 @@ def map_selection(player_planet_num):
                                                    int(planet_selected.rect.centerx),
                                                    int(planet_selected.rect.centery)) // 2,
                                 upgrades[ship_level]['скорость'])
+                            for _ in range(100):
+                                star_picture = random.choice((star_red_picture, star_blue_picture, star_blue_picture))
+                                Particle((randint(0, WIDTH), randint(0, HEIGHT)), randint(-5, 0), randint(-5, 5),
+                                         [star_picture],
+                                         [0, 0], do_kill=False, groups=(stars_map_sprites, all_sprites), is_map=True)
                             for start_planet in planets:
                                 if start_planet.player_here:
                                     start_planet.player_here = False
@@ -803,10 +813,12 @@ def map_selection(player_planet_num):
         if is_open_inventory:
             inventory(screen)
         if ship_level == 10:
-            pygame.draw.rect(screen, (200, 200, 200), (1050, 500, 100, 50), 0)
-            font = pygame.font.Font(None, 50)
-            text = font.render("Exit", True, (100, 100, 100))
-            screen.blit(text, (1055, 505))
+            # pygame.draw.rect(screen, (200, 200, 200), (1050, 500, 100, 50), 0)
+            # font = pygame.font.Font(None, 20)
+            # text = font.render("Если вы хототе покинуть галактику, нажмите сюда", True, (100, 100, 100))
+            draw_text(1055, 505, "Если вы хототе покинуть галактику, нажмите сюда", (100, 100, 100), screen, font=20,
+                      fon_color=(200, 200, 200))
+            # screen.blit(text, (1055, 505))
         pygame.display.flip()
         clock.tick(FPS * 2)
 
