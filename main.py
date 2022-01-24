@@ -170,7 +170,7 @@ here_sigh = load_image('here.png', [-1], size=(50, 50))
 
 def new_game():
     global PLANETS, PLANET_NAMES, PLANET_TYPE, MERCHANTS, ship_level, player_planet, have
-    ship_level = 0
+    ship_level = 10
     planet_generator(7, 50, 50)
     player_planet = 0
     have = {x: 0 for x in goods}
@@ -1487,7 +1487,8 @@ def do_titres(particles):
             particles_sprites.draw(screen)
             garbage_group.draw(screen)
         else:
-            all_sprites.clear()
+            for sp in all_sprites:
+                sp.kill()
         if time <= 0:
             draw_text(WIDTH // 4 + randint(0, -time // 40000) - -time // 80000,
                       (HEIGHT // 2 + randint(0, -time // 40000) - -time // 80000),
